@@ -1,0 +1,7 @@
+{
+	"name": "dx3bot",
+	"main": "dx3bot.js",
+  "dependencies": {
+    "discord.js": "^14.17.3"
+  }
+}
