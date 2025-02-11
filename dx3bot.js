@@ -1287,7 +1287,11 @@ setInterval(() => {
 
 
 // 봇 로그인
-// 환경 변수에서 봇 토큰 가져오기 (GitHub Actions와 로컬 환경 모두 지원)
+require('dotenv').config(); // .env 파일 불러오기
+const { Client } = require('discord.js');
+const client = new Client();
+
+// 환경 변수에서 봇 토큰 가져오기
 const token = process.env.DISCORD_BOT_TOKEN;
 
 if (!token) {
@@ -1296,3 +1300,4 @@ if (!token) {
 }
 
 client.login(token);
+console.log("✅ 디스코드 봇이 로그인되었습니다!");
