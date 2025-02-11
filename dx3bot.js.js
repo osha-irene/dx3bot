@@ -1287,8 +1287,12 @@ setInterval(() => {
 
 
 // 봇 로그인
-require('dotenv').config();
-const { Client } = require('discord.js');
-const client = new Client();
+// 환경 변수에서 봇 토큰 가져오기 (GitHub Actions와 로컬 환경 모두 지원)
+const token = process.env.DISCORD_BOT_TOKEN;
 
-client.login(process.env.DISCORD_BOT_TOKEN);
+if (!token) {
+    console.error("❌ DISCORD_BOT_TOKEN 환경 변수가 설정되지 않았습니다!");
+    process.exit(1); // 환경 변수가 없으면 실행 중지
+}
+
+client.login(token);
