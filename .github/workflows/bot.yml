@@ -1,27 +1,29 @@
-name: Run Discord Bot
+name: Deploy to Server
 
 on:
   push:
     branches:
-      - main  # main 브랜치에 push할 때 실행됨
+      - main  # main 브랜치에 Push하면 실행됨
 
 jobs:
-  run-bot:
-    runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest  # GitHub Actions 실행 환경
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v3  # 최신 코드 가져오기
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: 🔑 Setup SSH Connection
+        uses: appleboy/ssh-action@master  # SSH를 사용하여 서버에 접속
         with:
-          node-version: '18'  # 사용하고 있는 Node.js 버전 (변경 가능)
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Start bot
-        env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        run: node dx3bot.js
+          host: ${{ secrets.SERVER_HOST }}  # GitHub Secrets에서 서버 IP 가져오기
+          username: ${{ secrets.SERVER_USER }}  # 서버 사용자 이름
+          key: ${{ secrets.SERVER_SSH_KEY }}  # 서버 접속 SSH 키
+          script: |
+            echo "✅ 연결 성공!"
+            cd /home/o3osaham/dx3bot  # 봇이 있는 디렉토리로 이동
+            echo "DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}" > .env  # 환경 변수 저장
+            export DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}  # 환경 변수 설정
+            source ~/.bashrc  # 환경 변수 적용
+            npm install  # 패키지 설치
+            pm2 restart dx3bot || pm2 start dx3bot.js --name "dx3bot"  # PM2로 봇 실행
