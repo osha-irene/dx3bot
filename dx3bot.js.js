@@ -1287,5 +1287,8 @@ setInterval(() => {
 
 
 // 봇 로그인
-const token = "MTMzNTY2NjQ0Mzc1NjI0NTAzMg.GMjzAf.bwZ3fB1iipA6Srq6kqbFmOYKv0RBJCovVu0ppY";
-client.login(token);
+require('dotenv').config();
+const { Client } = require('discord.js');
+const client = new Client();
+
+client.login(process.env.DISCORD_BOT_TOKEN);
