@@ -1288,8 +1288,6 @@ setInterval(() => {
 
 // 봇 로그인
 require('dotenv').config(); // .env 파일 불러오기
-const { Client } = require('discord.js');
-const client = new Client();
 
 // 환경 변수에서 봇 토큰 가져오기
 const token = process.env.DISCORD_BOT_TOKEN;
