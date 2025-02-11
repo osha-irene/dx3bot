@@ -1287,5 +1287,5 @@ setInterval(() => {
 
 
 // 봇 로그인
-const { token } = require('MTMzNTY2NjQ0Mzc1NjI0NTAzMg.GMjzAf.bwZ3fB1iipA6Srq6kqbFmOYKv0RBJCovVu0ppY');
+const botToken = 'MTMzNTY2NjQ0Mzc1NjI0NTAzMg.GMjzAf.bwZ3fB1iipA6Srq6kqbFmOYKv0RBJCovVu0ppY';
 client.login(token);
