@@ -1,0 +1,27 @@
+name: Run Discord Bot
+
+on:
+  push:
+    branches:
+      - main  # main 브랜치에 push할 때 실행됨
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'  # 사용하고 있는 Node.js 버전 (변경 가능)
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Start bot
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: dx3bot.js
