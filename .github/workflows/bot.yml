@@ -24,4 +24,4 @@ jobs:
       - name: Start bot
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        run: dx3bot.js
+        run: node dx3bot.js
