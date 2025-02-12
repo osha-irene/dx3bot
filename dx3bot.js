@@ -119,12 +119,12 @@ if (message.content.startsWith('!업데이트')) {
         return message.channel.send("❌ 이 명령어는 봇 소유자만 사용할 수 있습니다.");
     }
 
-    // 🏷️ 버전 업데이트 방식 선택
+    // 🏷️ 업데이트 방식 설정
     let args = message.content.split(' ').slice(1);
     let updateType = args[0] || "patch"; // 기본값은 패치 업데이트
     let announcementMessage = args.slice(1).join(' ');
 
-    // 버전 업데이트
+    // 🔹 버전 업데이트 처리
     if (updateType === "major") {
         currentVersion.major += 1;
         currentVersion.minor = 0;
@@ -136,59 +136,59 @@ if (message.content.startsWith('!업데이트')) {
         currentVersion.patch += 1;
     }
 
-    // 새로운 버전 정보 저장
+    // 🔹 새로운 버전 정보 저장
     saveVersion(currentVersion);
 
-    // 📌 버전 정보 포맷팅
+    // 📌 새 버전 문자열
     let newVersion = `v${currentVersion.major}.${currentVersion.minor}.${currentVersion.patch}`;
-
-    // 공지 내용 설정
     let finalMessage = `📢 **DX3bot 업데이트: ${newVersion}**\n${announcementMessage || "새로운 기능이 추가되었습니다!"}`;
 
     // ✅ 모든 서버에 공지 전송
-    client.guilds.cache.forEach(async (guild) => {
+    client.guilds.cache.forEach((guild) => {
         try {
             const announcementChannelId = serverAnnouncementChannels[guild.id];
 
             if (announcementChannelId) {
                 const channel = guild.channels.cache.get(announcementChannelId);
                 if (channel) {
-                    await channel.send(finalMessage);
-                    console.log(`✅ 서버 "${guild.name}"에 업데이트 공지를 전송했습니다.`);
+                    channel.send(finalMessage)
+                        .then(() => console.log(`✅ 서버 "${guild.name}"에 업데이트 공지를 전송했습니다.`))
+                        .catch(err => console.error(`❌ 서버 "${guild.name}"에 공지를 보내는 중 오류 발생:`, err));
                     return;
                 }
             }
 
-            // 📩 공지 채널이 없으면 서버 관리자에게 DM 전송
-            const owner = await guild.fetchOwner();
-            if (owner) {
-                await owner.send(finalMessage);
-                console.log(`📩 서버 "${guild.name}"의 관리자 (${owner.user.tag})에게 DM으로 공지를 전송했습니다.`);
-            } else {
-                console.log(`⚠️ 서버 "${guild.name}"의 관리자 정보를 가져올 수 없습니다.`);
-            }
+            // 📩 공지 채널이 없는 경우 서버 관리자에게 DM 전송
+            guild.fetchOwner()
+                .then(owner => {
+                    if (owner) {
+                        owner.send(finalMessage)
+                            .then(() => console.log(`📩 서버 "${guild.name}"의 관리자 (${owner.user.tag})에게 DM으로 공지를 전송했습니다.`))
+                            .catch(err => console.error(`❌ 서버 관리자 DM 전송 실패 (${guild.name}):`, err));
+                    }
+                })
+                .catch(err => console.error(`⚠️ 서버 "${guild.name}"의 관리자 정보를 가져올 수 없습니다.`, err));
+
         } catch (error) {
-                   console.error(`❌ 서버 "${guild.name}"에 공지를 보내는 중 오류 발생:`, error);
+            console.error(`❌ 서버 "${guild.name}"에 공지를 보내는 중 오류 발생:`, error);
         }
     });
 
-	
-    // ✅ 봇 소유자에게도 DM 전송
-    try {
-        const botOwner = await client.users.fetch(BOT_OWNER_ID);
-        if (botOwner) {
-            await botOwner.send(finalMessage);
-            console.log(`📩 봇 소유자(${botOwner.tag})에게 업데이트 공지를 DM으로 보냈습니다.`);
-        }
-    } catch (error) {
-        console.error(`❌ 봇 소유자에게 DM을 보내는 중 오류 발생:`, error);
-    }
+    // ✅ 봇 소유자(당신)에게도 DM 전송
+    client.users.fetch(BOT_OWNER_ID)
+        .then(botOwner => {
+            if (botOwner) {
+                botOwner.send(finalMessage)
+                    .then(() => console.log(`📩 봇 소유자(${botOwner.tag})에게 업데이트 공지를 DM으로 보냈습니다.`))
+                    .catch(err => console.error("❌ 봇 소유자 DM 전송 실패:", err));
+            }
+        })
+        .catch(err => console.error("❌ 봇 소유자 정보 가져오기 실패:", err));
 
-    return message.channel.send(`✅ **업데이트 완료! 현재 버전: ${newVersion}**`);
+    // ✅ 명령어 실행한 채널에도 메시지 출력
+    message.channel.send(`✅ **업데이트 완료! 현재 버전: ${newVersion}**`);
 }
 
-    return message.channel.send(`✅ **업데이트 완료! 현재 버전: ${newVersion}**`);
-}
 	
 // !도움 명령어 ✅ 비동기 함수로 변경
 if (message.content.startsWith('!도움')) {
