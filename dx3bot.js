@@ -168,8 +168,12 @@ if (message.content.startsWith('!업데이트')) {
                 console.log(`⚠️ 서버 "${guild.name}"의 관리자 정보를 가져올 수 없습니다.`);
             }
         } catch (error) {
-            console.error(`❌ 서버 "${guild.name}"에 공지를
+                   console.error(`❌ 서버 "${guild.name}"에 공지를 보내는 중 오류 발생:`, error);
+        }
+    });
 
+    return message.channel.send(`✅ **업데이트 완료! 현재 버전: ${newVersion}**`);
+}
 	
 // !도움 명령어 ✅ 비동기 함수로 변경
 if (message.content.startsWith('!도움')) {
