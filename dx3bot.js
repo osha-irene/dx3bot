@@ -59,6 +59,71 @@ client.once('ready', async () => {
     });
 });
 
+// 업데이트 공지 기록을 저장할 파일
+const updateLogPath = path.join(__dirname, 'lastUpdateNotice.json');
+
+// 마지막 업데이트 공지 기록 로드 함수
+const loadLastUpdateNotice = () => {
+    if (!fs.existsSync(updateLogPath)) {
+        return { lastNoticeTimestamp: 0 };
+    }
+    return JSON.parse(fs.readFileSync(updateLogPath, 'utf8'));
+};
+
+// 마지막 업데이트 공지 기록 저장 함수
+const saveLastUpdateNotice = (data) => {
+    fs.writeFileSync(updateLogPath, JSON.stringify(data, null, 2));
+};
+
+// 📌 최신 공지 시간 로드
+let lastUpdateNotice = loadLastUpdateNotice();
+
+// 📌 업데이트 공지 메시지
+const announcementMessage = `🚀 **DX3bot이 업데이트되었습니다!** 🚀\n\n` +
+    `새로운 기능과 개선 사항이 반영되었습니다. \`!도움\` 명령어를 입력하여 최신 기능을 확인하세요!`;
+
+client.once('ready', async () => {
+    console.log(`✅ DX3bot이 실행되었습니다!`);
+
+    // 현재 시간 (밀리초 단위)
+    const currentTime = Date.now();
+
+    // 24시간(86400000ms) 내에 업데이트 공지를 보낸 경우 다시 보내지 않음
+    if (currentTime - lastUpdateNotice.lastNoticeTimestamp < 86400000) {
+        console.log("⏳ 최근 24시간 이내에 업데이트 공지가 전송되어 이번 실행에서는 생략됩니다.");
+        return;
+    }
+
+    client.guilds.cache.forEach(async (guild) => {
+        try {
+            // 공지 채널이 설정된 경우 해당 채널에 전송
+            const announcementChannelId = serverAnnouncementChannels[guild.id];
+            if (announcementChannelId) {
+                const channel = guild.channels.cache.get(announcementChannelId);
+                if (channel) {
+                    await channel.send(announcementMessage);
+                    console.log(`✅ 서버 "${guild.name}"의 공지 채널에 업데이트 공지를 전송했습니다.`);
+                    return;
+                }
+            }
+
+            // 공지 채널이 없으면 서버 관리자에게 DM 전송
+            const owner = await guild.fetchOwner();
+            if (owner) {
+                await owner.send(announcementMessage);
+                console.log(`📩 서버 "${guild.name}"의 관리자 (${owner.user.tag})에게 DM으로 업데이트 공지를 전송했습니다.`);
+            } else {
+                console.log(`⚠️ 서버 "${guild.name}"의 관리자 정보를 가져올 수 없습니다.`);
+            }
+        } catch (error) {
+            console.error(`❌ 서버 "${guild.name}"에 공지를 보내는 중 오류 발생:`, error);
+        }
+    });
+
+    // 공지 보낸 시간을 기록 (최신 공지만 보내도록)
+    lastUpdateNotice.lastNoticeTimestamp = currentTime;
+    saveLastUpdateNotice(lastUpdateNotice);
+});
 
 
 // 메시지 이벤트 핸들러
