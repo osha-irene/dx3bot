@@ -14,6 +14,20 @@ const client = new Client({
   ],
 });
 
+// 봇 로그인
+require('dotenv').config(); // .env 파일 불러오기
+
+
+// 환경 변수에서 봇 토큰 가져오기
+const token = process.env.DISCORD_BOT_TOKEN;
+const BOT_OWNER_ID = process.env.BOT_OWNER_ID;
+
+if (!token) {
+    console.error("❌ DISCORD_BOT_TOKEN 환경 변수가 설정되지 않았습니다!");
+    process.exit(1); // 환경 변수가 없으면 실행 중지
+}
+
+
 // 데이터 파일 경로
 const dataFilePath = path.join(__dirname, 'data.json');
 
@@ -1373,17 +1387,6 @@ setInterval(() => {
     });
 }, interval);
 
-
-// 봇 로그인
-require('dotenv').config(); // .env 파일 불러오기
-
-// 환경 변수에서 봇 토큰 가져오기
-const token = process.env.DISCORD_BOT_TOKEN;
-
-if (!token) {
-    console.error("❌ DISCORD_BOT_TOKEN 환경 변수가 설정되지 않았습니다!");
-    process.exit(1); // 환경 변수가 없으면 실행 중지
-}
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
