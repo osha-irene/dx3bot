@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Client, GatewayIntentBits, Events } = require('discord.js');
+const versionFilePath = path.join(__dirname, 'version.json');
 
 // 디스코드 클라이언트 설정
 const client = new Client({
@@ -32,6 +33,24 @@ const saveData = (data) => {
 // 서버별 활성 캐릭터 저장 객체
 let activeCharacter = {}; // { serverId: { userId: "캐릭터 이름" } }
 
+
+// 버전 데이터 로드
+const loadVersion = () => {
+    if (!fs.existsSync(versionFilePath)) {
+        return { major: 1, minor: 0, patch: 0 };
+    }
+    return JSON.parse(fs.readFileSync(versionFilePath, 'utf8'));
+};
+
+// 버전 데이터 저장
+const saveVersion = (versionData) => {
+    fs.writeFileSync(versionFilePath, JSON.stringify(versionData, null, 2));
+};
+
+// 📌 현재 버전 불러오기
+let currentVersion = loadVersion();
+
+
 // 봇 준비 완료 메시지
 client.once(Events.ClientReady, readyClient => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
@@ -57,72 +76,6 @@ client.once('ready', async () => {
             );
         }
     });
-});
-
-// 업데이트 공지 기록을 저장할 파일
-const updateLogPath = path.join(__dirname, 'lastUpdateNotice.json');
-
-// 마지막 업데이트 공지 기록 로드 함수
-const loadLastUpdateNotice = () => {
-    if (!fs.existsSync(updateLogPath)) {
-        return { lastNoticeTimestamp: 0 };
-    }
-    return JSON.parse(fs.readFileSync(updateLogPath, 'utf8'));
-};
-
-// 마지막 업데이트 공지 기록 저장 함수
-const saveLastUpdateNotice = (data) => {
-    fs.writeFileSync(updateLogPath, JSON.stringify(data, null, 2));
-};
-
-// 📌 최신 공지 시간 로드
-let lastUpdateNotice = loadLastUpdateNotice();
-
-// 📌 업데이트 공지 메시지
-const announcementMessage = `🚀 **DX3bot이 업데이트되었습니다!** 🚀\n\n` +
-    `새로운 기능과 개선 사항이 반영되었습니다. \`!도움\` 명령어를 입력하여 최신 기능을 확인하세요!`;
-
-client.once('ready', async () => {
-    console.log(`✅ DX3bot이 실행되었습니다!`);
-
-    // 현재 시간 (밀리초 단위)
-    const currentTime = Date.now();
-
-    // 24시간(86400000ms) 내에 업데이트 공지를 보낸 경우 다시 보내지 않음
-    if (currentTime - lastUpdateNotice.lastNoticeTimestamp < 86400000) {
-        console.log("⏳ 최근 24시간 이내에 업데이트 공지가 전송되어 이번 실행에서는 생략됩니다.");
-        return;
-    }
-
-    client.guilds.cache.forEach(async (guild) => {
-        try {
-            // 공지 채널이 설정된 경우 해당 채널에 전송
-            const announcementChannelId = serverAnnouncementChannels[guild.id];
-            if (announcementChannelId) {
-                const channel = guild.channels.cache.get(announcementChannelId);
-                if (channel) {
-                    await channel.send(announcementMessage);
-                    console.log(`✅ 서버 "${guild.name}"의 공지 채널에 업데이트 공지를 전송했습니다.`);
-                    return;
-                }
-            }
-
-            // 공지 채널이 없으면 서버 관리자에게 DM 전송
-            const owner = await guild.fetchOwner();
-            if (owner) {
-                await owner.send(announcementMessage);
-                console.log(`📩 서버 "${guild.name}"의 관리자 (${owner.user.tag})에게 DM으로 업데이트 공지를 전송했습니다.`);
-            } else {
-                console.log(`⚠️ 서버 "${guild.name}"의 관리자 정보를 가져올 수 없습니다.`);
-            }
-        } catch (error) {
-            console.error(`❌ 서버 "${guild.name}"에 공지를 보내는 중 오류 발생:`, error);
-        }
-    });
-
-    // 공지 보낸 시간을 기록 (최신 공지만 보내도록)
-    lastUpdateNotice.lastNoticeTimestamp = currentTime;
-    saveLastUpdateNotice(lastUpdateNotice);
 });
 
 
@@ -161,7 +114,63 @@ const convertSyndromeToEnglish = (syndrome) => {
     return (syndromeTranslation[syndrome] || syndrome).toUpperCase();
 };
 
+if (message.content.startsWith('!업데이트')) {
+    if (message.author.id !== BOT_OWNER_ID) {
+        return message.channel.send("❌ 이 명령어는 봇 소유자만 사용할 수 있습니다.");
+    }
 
+    // 🏷️ 버전 업데이트 방식 선택
+    let args = message.content.split(' ').slice(1);
+    let updateType = args[0] || "patch"; // 기본값은 패치 업데이트
+    let announcementMessage = args.slice(1).join(' ');
+
+    // 버전 업데이트
+    if (updateType === "major") {
+        currentVersion.major += 1;
+        currentVersion.minor = 0;
+        currentVersion.patch = 0;
+    } else if (updateType === "minor") {
+        currentVersion.minor += 1;
+        currentVersion.patch = 0;
+    } else {
+        currentVersion.patch += 1;
+    }
+
+    // 새로운 버전 정보 저장
+    saveVersion(currentVersion);
+
+    // 📌 버전 정보 포맷팅
+    let newVersion = `v${currentVersion.major}.${currentVersion.minor}.${currentVersion.patch}`;
+
+    // 공지 내용 설정
+    let finalMessage = `📢 **DX3bot 업데이트: ${newVersion}**\n${announcementMessage || "새로운 기능이 추가되었습니다!"}`;
+
+    // ✅ 모든 서버에 공지 전송
+    client.guilds.cache.forEach(async (guild) => {
+        try {
+            const announcementChannelId = serverAnnouncementChannels[guild.id];
+
+            if (announcementChannelId) {
+                const channel = guild.channels.cache.get(announcementChannelId);
+                if (channel) {
+                    await channel.send(finalMessage);
+                    console.log(`✅ 서버 "${guild.name}"에 업데이트 공지를 전송했습니다.`);
+                    return;
+                }
+            }
+
+            // 📩 공지 채널이 없으면 서버 관리자에게 DM 전송
+            const owner = await guild.fetchOwner();
+            if (owner) {
+                await owner.send(finalMessage);
+                console.log(`📩 서버 "${guild.name}"의 관리자 (${owner.user.tag})에게 DM으로 공지를 전송했습니다.`);
+            } else {
+                console.log(`⚠️ 서버 "${guild.name}"의 관리자 정보를 가져올 수 없습니다.`);
+            }
+        } catch (error) {
+            console.error(`❌ 서버 "${guild.name}"에 공지를
+
+	
 // !도움 명령어 ✅ 비동기 함수로 변경
 if (message.content.startsWith('!도움')) {
     (async () => { // ✅ 내부 비동기 람다 함수 사용
