@@ -172,6 +172,21 @@ if (message.content.startsWith('!업데이트')) {
         }
     });
 
+	
+    // ✅ 봇 소유자에게도 DM 전송
+    try {
+        const botOwner = await client.users.fetch(BOT_OWNER_ID);
+        if (botOwner) {
+            await botOwner.send(finalMessage);
+            console.log(`📩 봇 소유자(${botOwner.tag})에게 업데이트 공지를 DM으로 보냈습니다.`);
+        }
+    } catch (error) {
+        console.error(`❌ 봇 소유자에게 DM을 보내는 중 오류 발생:`, error);
+    }
+
+    return message.channel.send(`✅ **업데이트 완료! 현재 버전: ${newVersion}**`);
+}
+
     return message.channel.send(`✅ **업데이트 완료! 현재 버전: ${newVersion}**`);
 }
 	
