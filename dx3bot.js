@@ -1363,7 +1363,67 @@ if (message.content.startsWith('!타이터스 ')) {
 }
 
 
+	// ❌ 예기치 못한 오류를 처리하고 봇이 강제 종료되지 않도록 함
+process.on('uncaughtException', async (error) => {
+    console.error("🚨 [긴급 오류] 예기치 못한 오류 발생:", error);
+
+    // 오류 유형에 따라 대응 메시지 설정
+    let errorMessage = `🚨 **DX3bot에서 치명적인 오류가 발생했습니다!**\n\`\`\`${error.message}\`\`\`\n봇의 로그를 확인하고, 필요하면 다시 설치하세요.`;
+
+    // ❗봇 소유자에게 DM 보내기
+    try {
+        const owner = await client.users.fetch(process.env.BOT_OWNER_ID);
+        if (owner) {
+            await owner.send(errorMessage);
+            console.log("✅ 봇 소유자에게 오류 보고를 전송했습니다.");
+        }
+    } catch (dmError) {
+        console.error("❌ 봇 소유자에게 DM을 보낼 수 없습니다:", dmError);
+    }
 });
+
+// ❌ Discord API 오류 처리
+client.on('error', async (error) => {
+    console.error("🚨 [Discord 오류] 발생:", error);
+
+    // ❗봇 소유자에게 오류 메시지 전송
+    try {
+        const owner = await client.users.fetch(process.env.BOT_OWNER_ID);
+        if (owner) {
+            await owner.send(`🚨 **DX3bot이 Discord API 오류로 인해 문제가 발생했습니다.**\n\`\`\`${error.message}\`\`\`\n봇의 권한을 확인하고, 필요하면 다시 설치하세요.`);
+        }
+    } catch (dmError) {
+        console.error("❌ 봇 소유자에게 Discord 오류 보고를 보낼 수 없습니다:", dmError);
+    }
+});
+
+// ❌ "Missing Permissions" 오류 자동 처리
+    try {
+        // 명령어 실행 코드...
+
+    } catch (error) {
+        if (error.code === 50013) {
+            console.error(`❌ 서버 "${message.guild.name}"에서 메시지를 보낼 수 있는 권한이 없음.`);
+
+            try {
+                const owner = await message.guild.fetchOwner();
+                if (owner) {
+                    await owner.send(
+                        `❌ **DX3bot이 "${message.guild.name}" 서버에서 메시지를 보낼 수 없습니다.**\n봇의 권한을 확인해주세요!`
+                    );
+                }
+            } catch (dmError) {
+                console.error(`🚫 서버 소유자에게 DM을 보낼 수 없습니다:`, dmError);
+            }
+        } else {
+            console.error("🚨 [명령어 처리 중 오류 발생]:", error);
+        }
+    }	
+
+});
+
+
+
 
 
 // 12시간마다 BCdicebot#8116에게 명령어 전송
