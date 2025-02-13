@@ -369,26 +369,27 @@ const setCharacterCodeName = (userId, characterName, codeName) => {
   data[userId][characterName].codeName = codeName; // 코드네임 추가
   saveData(data);
 };
+	
+// 🔹 활성 캐릭터 정보를 저장할 파일 경로
+const activeCharacterFile = './active_character.json';
 
- // !지정 명령어 (서버별로 활성 캐릭터 저장)
-  if (message.content.startsWith('!지정 ')) {
-    const match = message.content.match(/"(.*?)"|\S+/g);
-    if (!match || match.length < 2) {
-      return message.channel.send('❌ 사용법: `!지정 "캐릭터 이름"`');
+// 🔹 기존 활성 캐릭터 정보를 불러오기
+let activeCharacter = {};
+if (fs.existsSync(activeCharacterFile)) {
+    try {
+        activeCharacter = JSON.parse(fs.readFileSync(activeCharacterFile, 'utf8'));
+    } catch (error) {
+        console.error('❌ 활성 캐릭터 데이터를 불러오는 중 오류 발생:', error);
+        activeCharacter = {};  // 오류 발생 시 빈 객체로 초기화
     }
-    
-    const characterName = match.slice(1).join(' ').replace(/"/g, '');
+}
 
-    if (!data[serverId] || !data[serverId][userId] || !data[serverId][userId][characterName]) {
-      return message.channel.send(`❌ 캐릭터 "${characterName}"의 데이터를 찾을 수 없습니다. 먼저 \`!시트입력\`을 사용하여 캐릭터를 등록하세요.`);
-    }
+// 🔹 활성 캐릭터 데이터를 저장하는 함수
+const saveActiveCharacterData = () => {
+    fs.writeFileSync(activeCharacterFile, JSON.stringify(activeCharacter, null, 2));
+};
 
-    if (!activeCharacter[serverId]) activeCharacter[serverId] = {};
-    activeCharacter[serverId][userId] = characterName;
-    
-    message.channel.send(`✅ **${characterName}**님을 활성 캐릭터로 지정했습니다.`);
-  }
-
+// 🔹 !지정해제 명령어
 if (message.content === '!지정해제') {
     if (!message.guild) return message.channel.send("❌ 이 명령어는 서버에서만 사용할 수 있습니다.");
 
@@ -402,9 +403,33 @@ if (message.content === '!지정해제') {
     const prevCharacter = activeCharacter[guildId][userId];
     delete activeCharacter[guildId][userId];
 
+    saveActiveCharacterData();  // 변경 사항 저장
+
     return message.channel.send(`✅ **${prevCharacter}**님을 활성 캐릭터에서 해제했습니다.`);
 }
 
+// 🔹 !지정 명령어
+if (message.content.startsWith('!지정 ')) {
+    const match = message.content.match(/"!([^"]+)"|\S+/g);
+    if (!match || match.length < 2) {
+        return message.channel.send('❌ 사용법: `!지정 "캐릭터 이름"`');
+    }
+
+    const guildId = message.guild.id;
+    const userId = message.author.id;
+    const characterName = match.slice(1).join(' ').replace(/"/g, '');
+
+    if (!data[guildId] || !data[guildId][userId] || !data[guildId][userId][characterName]) {
+        return message.channel.send(`❌ 캐릭터 "${characterName}"의 데이터를 찾을 수 없습니다. 먼저 \`!시트입력\`을 사용하여 캐릭터를 등록하세요.`);
+    }
+
+    if (!activeCharacter[guildId]) activeCharacter[guildId] = {};
+    activeCharacter[guildId][userId] = characterName;
+
+    saveActiveCharacterData();  // 변경 사항 저장
+
+    return message.channel.send(`✅ **${characterName}**님을 활성 캐릭터로 지정했습니다.`);
+}
 //코드네임 입력
 if (message.content.startsWith('!코드네임')) {
   const userId = message.author.id;
