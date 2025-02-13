@@ -1418,6 +1418,61 @@ setInterval(() => {
     });
 }, interval);
 
+// ❌ 오류 발생 시 봇이 꺼지지 않고 관리자에게 DM을 보내도록 설정
+client.on('error', async (error) => {
+    console.error("🚨 [봇 오류 발생]:", error);
+
+    try {
+        const owner = await client.users.fetch(BOT_OWNER_ID);
+        if (owner) {
+            owner.send(`🚨 **DX3bot 오류 발생!**\n\`\`\`${error.stack || error.message}\`\`\``)
+                .then(() => console.log("📩 봇 관리자에게 오류 메시지를 보냈습니다."))
+                .catch(err => console.error("❌ 봇 관리자에게 오류 DM 전송 실패:", err));
+        }
+    } catch (fetchError) {
+        console.error("❌ 봇 관리자 정보를 가져오는 중 오류 발생:", fetchError);
+    }
+});
+
+// ❌ 명령어 실행 중 오류 발생 시 처리 (Missing Permissions 포함)
+client.on('messageCreate', async (message) => {
+    try {
+        // ✅ 기존의 명령어 실행 코드가 여기에 위치
+
+    } catch (error) {
+        console.error("🚨 [명령어 처리 중 오류 발생]:", error);
+
+        if (error.code === 50013) { // Missing Permissions 오류
+            console.error(`❌ 서버 "${message.guild.name}"에서 메시지를 보낼 수 있는 권한이 없음.`);
+            
+            try {
+                (async () => {
+                    const owner = await message.guild.fetchOwner();
+                    if (owner) {
+                        owner.send(
+                            `❌ **DX3bot이 "${message.guild.name}" 서버에서 메시지를 보낼 수 없습니다.**\n봇의 권한을 확인해주세요!`
+                        );
+                    }
+                })();
+            } catch (dmError) {
+                console.error("🚫 서버 소유자에게 DM을 보낼 수 없습니다:", dmError);
+            }
+        }
+
+        // 📩 관리자에게 DM으로 오류 메시지 보내기
+        try {
+            const owner = await client.users.fetch(BOT_OWNER_ID);
+            if (owner) {
+                owner.send(`🚨 **DX3bot 명령어 처리 중 오류 발생!**\n\`\`\`${error.stack || error.message}\`\`\``)
+                    .then(() => console.log("📩 봇 관리자에게 오류 메시지를 보냈습니다."))
+                    .catch(err => console.error("❌ 봇 관리자에게 오류 DM 전송 실패:", err));
+            }
+        } catch (fetchError) {
+            console.error("❌ 봇 관리자 정보를 가져오는 중 오류 발생:", fetchError);
+        }
+    }
+});
+
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
