@@ -371,7 +371,7 @@ const setCharacterCodeName = (userId, characterName, codeName) => {
 };
 
  // !지정 명령어 (서버별로 활성 캐릭터 저장)
-  if (message.content.startsWith('!지정')) {
+  if (message.content.startsWith('!지정 ')) {
     const match = message.content.match(/"(.*?)"|\S+/g);
     if (!match || match.length < 2) {
       return message.channel.send('❌ 사용법: `!지정 "캐릭터 이름"`');
