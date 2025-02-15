@@ -756,87 +756,82 @@ if (message.content.startsWith('!D로')) {
 
 
 
-
 // !판정 명령어 처리 (개별 서버 지원)
 if (message.content.startsWith('!판정')) {
-  if (!message.guild) return; // DM에서 실행되지 않도록 방지
+    if (!message.guild) return; // DM에서 실행되지 않도록 방지
 
-  const serverId = message.guild.id;
-  const userId = message.author.id;
-  const args = message.content.split(' ').slice(1);
+    const serverId = message.guild.id;
+    const userId = message.author.id;
+    const args = message.content.split(' ').slice(1);
 
-  if (args.length < 1) {
-    return message.channel.send('❌ 사용법: `!판정 [항목]`');
-  }
-
-  let attribute = args[0];
-  let activeCharacterName = activeCharacter[serverId]?.[userId];
-
-  if (!activeCharacterName) {
-    return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 [캐릭터 이름]\` 명령어로 캐릭터를 지정해주세요.`);
-  }
-
-  // 데이터 파일에서 서버별 사용자 데이터 불러오기
-  fs.readFile('data.json', 'utf8', (err, data) => {
-    if (err) {
-      console.error('파일을 읽는 데 오류가 발생했습니다:', err);
-      return message.channel.send('❌ 데이터 파일을 불러오는 데 문제가 발생했습니다.');
+    if (args.length < 1) {
+        return message.channel.send('❌ 사용법: `!판정 [항목]`');
     }
 
-    // 데이터 파싱
-    let sheetData;
-    try {
-      sheetData = JSON.parse(data);
-    } catch (parseErr) {
-      console.error('데이터 파싱 오류:', parseErr);
-      return message.channel.send('❌ 데이터 파일 파싱에 실패했습니다.');
+    let attribute = args[0];
+    let activeCharacterName = activeCharacter[serverId]?.[userId];
+
+    if (!activeCharacterName) {
+        return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 [캐릭터 이름]\` 명령어로 캐릭터를 지정해주세요.`);
     }
 
-    // 유저 데이터 확인
-    if (!sheetData[serverId] || !sheetData[serverId][userId] || !sheetData[serverId][userId][activeCharacterName]) {
-      return message.channel.send(`❌ **${activeCharacterName}** 캐릭터 데이터를 찾을 수 없습니다.`);
-    }
+    // 데이터 파일에서 서버별 사용자 데이터 불러오기
+    fs.readFile('data.json', 'utf8', (err, data) => {
+        if (err) {
+            console.error('파일을 읽는 데 오류가 발생했습니다:', err);
+            return message.channel.send('❌ 데이터 파일을 불러오는 데 문제가 발생했습니다.');
+        }
 
-    let characterData = sheetData[serverId][userId][activeCharacterName];
+        // 데이터 파싱
+        let sheetData;
+        try {
+            sheetData = JSON.parse(data);
+        } catch (parseErr) {
+            console.error('데이터 파싱 오류:', parseErr);
+            return message.channel.send('❌ 데이터 파일 파싱에 실패했습니다.');
+        }
 
-    // 동적 항목이 상위 항목에 매핑되도록 강제 처리
-    let mainAttr = attribute;
+        // 유저 데이터 확인
+        if (!sheetData[serverId] || !sheetData[serverId][userId] || !sheetData[serverId][userId][activeCharacterName]) {
+            return message.channel.send(`❌ **${activeCharacterName}** 캐릭터 데이터를 찾을 수 없습니다.`);
+        }
 
-    // 동적 항목이 있는 경우, 상위 항목으로 매핑
-    for (let key in dynamicMappingRules) {
-      if (attribute.startsWith(key)) {
-        mainAttr = dynamicMappingRules[key]; // 예: '운전:' → '육체'
-        break;
-      }
-    }
+        let characterData = sheetData[serverId][userId][activeCharacterName];
 
-    // 하위 항목이 상위 항목과 매핑되도록 처리
-    for (let key in subToMainMapping) {
-      if (attribute.startsWith(key)) {
-        mainAttr = subToMainMapping[key]; // 예: '운전:4륜' → '육체'
-        break;
-      }
-    }
+        // 🔹 `attribute`가 하위 능력치일 경우, 자동으로 상위 능력치 매핑
+        let mainAttr = null;
 
-    // 데이터에서 능력치 값 가져오기
-    const mainValue = characterData[mainAttr] || 0;
-    const subValue = characterData[attribute] || 0;
-    const chimiskD = characterData.침식D || 0;
+        if (subToMainMapping[attribute]) {
+            mainAttr = subToMainMapping[attribute]; // 예: '백병' → '육체'
+        } else {
+            for (let key in dynamicMappingRules) {
+                if (attribute.startsWith(key)) {
+                    mainAttr = dynamicMappingRules[key]; // 예: '운전:4륜' → '육체'
+                    break;
+                }
+            }
+        }
 
-    // 디버깅 로그 출력
-    console.log(`[판정] 활성화된 캐릭터: ${activeCharacterName}`);
-    console.log(`[판정] 올바른 상위 항목: ${mainAttr}, 값: ${mainValue}`);
-    console.log(`[판정] 하위 항목: ${attribute}, 값: ${subValue}`);
-    console.log(`[판정] 침식D 값: ${chimiskD}`);
+        // 상위 능력치 및 하위 능력치 값 가져오기
+        const mainValue = mainAttr ? (characterData[mainAttr] || 0) : 0; // 상위 능력치 (없는 경우 0)
+        const subValue = characterData[attribute] || 0; // 하위 능력치 (없는 경우 0)
+        const chimiskD = characterData.침식D || 0; // 침식D 값
 
-    if (mainValue !== undefined && subValue !== undefined) {
-      const finalMainValue = `(${mainValue}+${chimiskD})dx`;
-      const finalResult = `${finalMainValue}+${subValue}`;
-      message.channel.send(`${finalResult}  ${attribute} 판정 <@${message.author.id}>`);
-    } else {
-      message.channel.send(`❌ **${activeCharacterName}**의 \`${attribute}\` 값을 찾을 수 없습니다.`);
-    }
-  });
+        // 디버깅 로그 출력
+        console.log(`[판정] 활성화된 캐릭터: ${activeCharacterName}`);
+        console.log(`[판정] 상위 항목: ${mainAttr || '없음'}, 값: ${mainValue}`);
+        console.log(`[판정] 하위 항목: ${attribute}, 값: ${subValue}`);
+        console.log(`[판정] 침식D 값: ${chimiskD}`);
+
+        // ✅ `mainValue`는 `(값+침식D)dx`로만 사용하고, `subValue`가 있을 때만 덧셈 적용
+        if (mainValue > 0) {
+            const diceExpression = `(${mainValue}+${chimiskD})dx`;
+            const finalResult = subValue > 0 ? `${diceExpression}+${subValue}` : `${diceExpression}`;
+            message.channel.send(`${finalResult}  ${attribute} 판정 <@${message.author.id}>`);
+        } else {
+            message.channel.send(`❌ **${activeCharacterName}**의 \`${attribute}\` 값을 찾을 수 없습니다.`);
+        }
+    });
 }
 
 
