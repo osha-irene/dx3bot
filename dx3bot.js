@@ -105,7 +105,7 @@ client.on('messageCreate', (message) => {
 
 
 const syndromeTranslation = {
-    "엔젤 헤일로": "ANGEL HALO",
+    "엔젤헤일로": "ANGEL HALO",
     "발로르": "BALOR",
     "블랙독": "BLACK DOG",
     "브람스토커": "BRAM STOKER",
