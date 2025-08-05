@@ -409,7 +409,7 @@ client.on('messageCreate', async (message) => {
             saveData(data);
             
             let response = `✅ **${characterName}**의 항목이 설정되었습니다.\n`;
-            response += `**설정된 항목:** ${updatedAttributes.join(', ')}`;
+            response += `📊 **설정된 항목:** ${updatedAttributes.join(', ')}`;
             
             message.channel.send(response);
         }
@@ -842,6 +842,33 @@ client.on('messageCreate', async (message) => {
             }
         }
 
+        // ==================== 콤보 삭제 명령어 ====================
+        else if (message.content.startsWith('!콤보삭제 ')) {
+            const regex = /^!콤보삭제\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))$/;
+            const match = message.content.match(regex);
+
+            if (!match) {
+                return message.channel.send('❌ 사용법: `!콤보삭제 "콤보 이름"` 또는 `!콤보삭제 [콤보 이름]`');
+            }
+
+            let comboName = match[1] || match[2] || match[3];
+            let activeCharacterName = activeCharacter[serverId]?.[userId];
+
+            if (!activeCharacterName) {
+                return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+            }
+
+            if (!comboData[serverId] || !comboData[serverId][userId] || !comboData[serverId][userId][activeCharacterName] || !comboData[serverId][userId][activeCharacterName][comboName]) {
+                return message.channel.send(`❌ **${activeCharacterName}**에게 **"${comboName}"** 콤보가 존재하지 않습니다.`);
+            }
+
+            // 콤보 삭제
+            delete comboData[serverId][userId][activeCharacterName][comboName];
+            saveComboData(comboData);
+
+            return message.channel.send(`🗑️ **${activeCharacterName}**의 콤보 **"${comboName}"**가 삭제되었습니다.`);
+        }
+
         // ==================== 캐릭터 삭제 명령어 ====================
         else if (message.content.startsWith('!캐릭터삭제')) {
             const regex = /^!캐릭터삭제\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))$/;
@@ -1103,4 +1130,3 @@ client.on('error', async (error) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
-
