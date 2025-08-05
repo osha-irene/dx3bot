@@ -771,116 +771,35 @@ client.on('messageCreate', async (message) => {
             message.channel.send(`1d10 등장침식 <@${message.author.id}>`);
         }
 
-        // ==================== 콤보 명령어 ====================
+             // ==================== 콤보 명령어 ====================
         else if (message.content.startsWith('!콤보')) {
-            console.log(`[디버깅] !콤보 명령어 실행됨. 메시지 길이: ${message.content.length}`);
-            
-            // 메시지 길이 체크
-            if (message.content.length > 1900) {
-                return message.channel.send('❌ 콤보 데이터가 너무 깁니다. 1900자 이하로 줄여주세요.');
+            const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
+            const match = message.content.match(regex);
+
+            if (!match) {
+                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
             }
-            
-            // 활성 캐릭터 먼저 확인
+
+            let comboName = match[1] || match[2] || match[3];
+            let condition = match[4];
+            let comboDescription = match[5];
+
             let activeCharacterName = activeCharacter[serverId]?.[userId];
             if (!activeCharacterName) {
                 return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
             }
 
-            // "!콤보 " 제거
-            let content = message.content.substring(5).trim();
-            console.log(`[디버깅] 처리할 내용: ${content}`);
-            
-            if (!content) {
-                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`\n📌 **예시:** `!콤보 "연속 사격" 99↓ 모든 특수문자 그대로 보존됩니다`');
-            }
+            if (!comboData[serverId]) comboData[serverId] = {};
+            if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
+            if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
+            if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
 
-            let comboName = '';
-            let condition = '';
-            let comboDescription = '';
+            comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
+            saveComboData(comboData);
 
-            try {
-                // 1단계: 콤보 이름만 정확히 추출
-                if (content.startsWith('"')) {
-                    // "콤보 이름" 형태
-                    const closeQuote = content.indexOf('"', 1);
-                    if (closeQuote === -1) {
-                        return message.channel.send('❌ 콤보 이름의 따옴표가 닫히지 않았습니다.');
-                    }
-                    comboName = content.substring(1, closeQuote);
-                    content = content.substring(closeQuote + 1).trim();
-                    
-                } else if (content.startsWith('[')) {
-                    // [콤보 이름] 형태
-                    const closeBracket = content.indexOf(']', 1);
-                    if (closeBracket === -1) {
-                        return message.channel.send('❌ 콤보 이름의 대괄호가 닫히지 않았습니다.');
-                    }
-                    comboName = content.substring(1, closeBracket);
-                    content = content.substring(closeBracket + 1).trim();
-                    
-                } else {
-                    // 공백까지가 콤보 이름
-                    const firstSpace = content.indexOf(' ');
-                    if (firstSpace === -1) {
-                        return message.channel.send('❌ 침식률 조건과 콤보 데이터가 필요합니다.');
-                    }
-                    comboName = content.substring(0, firstSpace);
-                    content = content.substring(firstSpace + 1).trim();
-                }
-
-                console.log(`[디버깅] 콤보명: "${comboName}"`);
-                console.log(`[디버깅] 남은 내용: "${content}"`);
-
-                // 2단계: 침식률 조건만 정확히 추출 (숫자+↑/↓ 패턴)
-                const conditionMatch = content.match(/^(\d+[↑↓])\s+(.*)$/);
-                if (!conditionMatch) {
-                    return message.channel.send('❌ 침식률 조건 형식이 잘못되었습니다.\n✅ 올바른 형식: `99↓`, `100↑`, `130↑` 등\n📌 조건 뒤에 공백을 하나 넣어주세요.');
-                }
-
-                condition = conditionMatch[1];
-                comboDescription = conditionMatch[2]; // 나머지는 모두 그대로 보존
-
-                console.log(`[디버깅] 조건: "${condition}"`);
-                console.log(`[디버깅] 설명: "${comboDescription}"`);
-
-                // 콤보 설명이 비어있으면 오류
-                if (!comboDescription.trim()) {
-                    return message.channel.send('❌ 콤보 데이터가 없습니다.');
-                }
-
-            } catch (error) {
-                console.error(`[오류] 콤보 파싱 실패:`, error);
-                return message.channel.send('❌ 콤보 데이터 파싱 중 오류가 발생했습니다.');
-            }
-
-            try {
-                // 콤보 데이터 저장
-                let currentComboData = loadComboData();
-                
-                // 데이터 구조 초기화
-                if (!currentComboData[serverId]) currentComboData[serverId] = {};
-                if (!currentComboData[serverId][userId]) currentComboData[serverId][userId] = {};
-                if (!currentComboData[serverId][userId][activeCharacterName]) currentComboData[serverId][userId][activeCharacterName] = {};
-                if (!currentComboData[serverId][userId][activeCharacterName][comboName]) currentComboData[serverId][userId][activeCharacterName][comboName] = {};
-
-                // 콤보 저장 (설명은 완전히 그대로 보존)
-                currentComboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-                
-                // 파일에 저장
-                saveComboData(currentComboData);
-                
-                // 전역 변수도 업데이트
-                comboData = currentComboData;
-
-                console.log(`[디버깅] 콤보 저장 성공 - 이름: "${comboName}", 조건: "${condition}"`);
-
-                return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"** (${condition})가 저장되었습니다.\n📝 **저장된 내용:** ${comboDescription.length > 100 ? comboDescription.substring(0, 100) + '...' : comboDescription}`);
-
-            } catch (error) {
-                console.error(`[오류] 콤보 저장 실패:`, error);
-                return message.channel.send(`❌ 콤보 저장 중 오류가 발생했습니다: ${error.message}`);
-            }
+            return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
         }
+
 
         // ==================== 콤보 호출 명령어 ====================
         else if (message.content.startsWith('!@')) {
@@ -1214,3 +1133,4 @@ client.on('error', async (error) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
