@@ -773,129 +773,31 @@ client.on('messageCreate', async (message) => {
 
         // ==================== 콤보 명령어 ====================
         else if (message.content.startsWith('!콤보')) {
-            console.log(`[콤보 디버깅] ====== 콤보 명령어 시작 ======`);
-            console.log(`[콤보 디버깅] 원본 메시지: "${message.content}"`);
-            console.log(`[콤보 디버깅] 메시지 길이: ${message.content.length}`);
-            
-            // 정규식 대신 수동 파싱으로 변경 (+ 기호 문제 해결)
-            let content = message.content.substring(5).trim(); // "!콤보 " 제거
-            console.log(`[콤보 디버깅] 처리할 내용: "${content}"`);
-            
-            if (!content) {
+            const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
+            const match = message.content.match(regex);
+
+            if (!match) {
                 return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
             }
-            
-            let comboName = '';
-            let condition = '';
-            let comboDescription = '';
-            
-            try {
-                // 1단계: 콤보 이름 추출
-                if (content.startsWith('"')) {
-                    const endQuote = content.indexOf('"', 1);
-                    if (endQuote === -1) {
-                        return message.channel.send('❌ 콤보 이름의 따옴표가 닫히지 않았습니다.');
-                    }
-                    comboName = content.substring(1, endQuote);
-                    content = content.substring(endQuote + 1).trim();
-                } else if (content.startsWith('[')) {
-                    const endBracket = content.indexOf(']', 1);
-                    if (endBracket === -1) {
-                        return message.channel.send('❌ 콤보 이름의 대괄호가 닫히지 않았습니다.');
-                    }
-                    comboName = content.substring(1, endBracket);
-                    content = content.substring(endBracket + 1).trim();
-                } else {
-                    const spaceIndex = content.indexOf(' ');
-                    if (spaceIndex === -1) {
-                        return message.channel.send('❌ 침식률 조건과 콤보 데이터가 필요합니다.');
-                    }
-                    comboName = content.substring(0, spaceIndex);
-                    content = content.substring(spaceIndex + 1).trim();
-                }
-                
-                console.log(`[콤보 디버깅] 추출된 콤보명: "${comboName}"`);
-                console.log(`[콤보 디버깅] 남은 내용: "${content}"`);
-                
-                // 2단계: 침식률 조건 추출 (100↑ 또는 99↓ 형태)
-                const parts = content.split(' ');
-                let conditionFound = false;
-                
-                for (let i = 0; i < parts.length; i++) {
-                    if (parts[i].match(/^\d+[↑↓]$/)) {
-                        condition = parts[i];
-                        // 조건 이후의 모든 부분을 콤보 설명으로 사용
-                        comboDescription = parts.slice(i + 1).join(' ');
-                        conditionFound = true;
-                        break;
-                    }
-                }
-                
-                if (!conditionFound) {
-                    return message.channel.send('❌ 침식률 조건을 찾을 수 없습니다. 형식: `99↓`, `100↑` 등');
-                }
-                
-                if (!comboDescription.trim()) {
-                    return message.channel.send('❌ 콤보 데이터가 없습니다.');
-                }
-                
-                console.log(`[콤보 디버깅] 추출된 데이터:`);
-                console.log(`[콤보 디버깅] - 콤보명: "${comboName}"`);
-                console.log(`[콤보 디버깅] - 조건: "${condition}"`);
-                console.log(`[콤보 디버깅] - 설명: "${comboDescription}"`);
-                
-            } catch (error) {
-                console.error(`[콤보 디버깅] ❌ 파싱 실패:`, error);
-                return message.channel.send('❌ 콤보 데이터 파싱 중 오류가 발생했습니다.');
-            }
-            
+
+            let comboName = match[1] || match[2] || match[3];
+            let condition = match[4];
+            let comboDescription = match[5];
+
             let activeCharacterName = activeCharacter[serverId]?.[userId];
-            console.log(`[콤보 디버깅] 활성 캐릭터: "${activeCharacterName}"`);
-            
             if (!activeCharacterName) {
-                console.log(`[콤보 디버깅] ❌ 활성 캐릭터 없음`);
                 return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
             }
-            
-            console.log(`[콤보 디버깅] 데이터 구조 초기화 시작...`);
-            
-            // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
-            if (!comboData[serverId]) {
-                comboData[serverId] = {};
-                console.log(`[콤보 디버깅] 서버 데이터 초기화 완료`);
-            }
-            if (!comboData[serverId][userId]) {
-                comboData[serverId][userId] = {};
-                console.log(`[콤보 디버깅] 사용자 데이터 초기화 완료`);
-            }
-            if (!comboData[serverId][userId][activeCharacterName]) {
-                comboData[serverId][userId][activeCharacterName] = {};
-                console.log(`[콤보 디버깅] 캐릭터 데이터 초기화 완료`);
-            }
-            if (!comboData[serverId][userId][activeCharacterName][comboName]) {
-                comboData[serverId][userId][activeCharacterName][comboName] = {};
-                console.log(`[콤보 디버깅] 콤보 데이터 초기화 완료`);
-            }
-            
-            console.log(`[콤보 디버깅] 콤보 저장 시작...`);
-            
-            // 콤보 데이터 저장
+
+            if (!comboData[serverId]) comboData[serverId] = {};
+            if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
+            if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
+            if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
+
             comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-            
-            console.log(`[콤보 디버깅] 콤보 데이터 저장 완료`);
-            console.log(`[콤보 디버깅] 저장된 데이터:`, comboData[serverId][userId][activeCharacterName][comboName]);
-            
-            try {
-                saveComboData(comboData);  // comboData 인자 전달
-                console.log(`[콤보 디버깅] 파일 저장 완료`);
-            } catch (error) {
-                console.error(`[콤보 디버깅] ❌ 파일 저장 실패:`, error);
-                return message.channel.send(`❌ 콤보 저장 중 파일 쓰기 오류가 발생했습니다: ${error.message}`);
-            }
-            
-            console.log(`[콤보 디버깅] ====== 콤보 명령어 완료 ======`);
-            
-            return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"** (${condition})가 저장되었습니다.\n🔍 **저장된 내용:** ${comboDescription.substring(0, 100)}${comboDescription.length > 100 ? '...' : ''}`);
+            saveComboData(comboData);
+
+            return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
         }
 
         // ==================== 콤보 호출 명령어 ====================
@@ -936,13 +838,12 @@ client.on('messageCreate', async (message) => {
             }
 
             if (selectedCombo) {
-                // | 기호를 기준으로 줄바꿈 처리
-                const formattedCombo = selectedCombo.replace(/\s*\|\s*/g, '\n> ');
-                return message.channel.send(`> **${selectedCondition} 【${comboName}】**\n> ${formattedCombo}`);
+                return message.channel.send(`> **${selectedCondition} 【${comboName}】**\n> ${selectedCombo}`);
             } else {
                 return message.channel.send(`❌ 침식률 조건에 맞는 '${comboName}' 콤보를 찾을 수 없습니다.`);
             }
         }
+
 
         // ==================== 콤보 삭제 명령어 ====================
         else if (message.content.startsWith('!콤보삭제 ')) {
@@ -1232,3 +1133,4 @@ client.on('error', async (error) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
