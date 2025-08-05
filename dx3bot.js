@@ -771,37 +771,43 @@ client.on('messageCreate', async (message) => {
             message.channel.send(`1d10 등장침식 <@${message.author.id}>`);
         }
 
-        // ==================== 콤보 명령어 ====================
-        else if (message.content.startsWith('!콤보')) {
-            // 더 안전한 정규식으로 변경 - 콤보 데이터 부분에서 모든 문자 허용
-            const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+?))\s+(\d+[↑↓])\s+(.*)$/;
-            const match = message.content.match(regex);
-            
-            if (!match) {
-                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`\n📌 **예시:** `!콤보 "연속 사격" 99↓ 《C: 발로르(2) + 흑의 철퇴(4)》`');
-            }
-            
-            let comboName = match[1] || match[2] || match[3];
-            let condition = match[4];  // 침식률 조건 (숫자+↑/↓ 패턴으로 더 정확하게)
-            let comboDescription = match[5];  // 나머지 모든 문자 (.*)
-            
-            let activeCharacterName = activeCharacter[serverId]?.[userId];
-            if (!activeCharacterName) {
-                return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
-            }
-            
-            // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
-            if (!comboData[serverId]) comboData[serverId] = {};
-            if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
-            if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
-            if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
-            
-            // 콤보 데이터 저장
-            comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-            saveComboData(comboData);
-            
-            return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
-        }
+      // **🔹 !콤보 명령어 추가 (서버별 콤보 저장 기능)**
+if (message.content.startsWith('!콤보')) {
+    if (!message.guild) return; // DM 방지
+
+    const serverId = message.guild.id;
+    const userId = message.author.id;
+
+    // 정규식으로 콤보명과 나머지 데이터 분리
+    const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
+    const match = message.content.match(regex);
+
+    if (!match) {
+        return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
+    }
+
+    // 따옴표 또는 대괄호가 있으면 제거하여 콤보 이름 추출
+    let comboName = match[1] || match[2] || match[3];
+    let condition = match[4];  // 침식률 조건 (예: 99↓ 또는 100↑)
+    let comboDescription = match[5];  // 콤보 데이터
+
+    let activeCharacterName = activeCharacter[serverId]?.[userId];
+    if (!activeCharacterName) {
+        return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+    }
+
+    // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
+    if (!comboData[serverId]) comboData[serverId] = {};
+    if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
+    if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
+    if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
+
+    // 콤보 데이터 저장
+    comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
+    saveComboData();
+
+    return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
+}
 
         // ==================== 콤보 호출 명령어 ====================
         else if (message.content.startsWith('!@')) {
@@ -1137,3 +1143,4 @@ client.on('error', async (error) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
