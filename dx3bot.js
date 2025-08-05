@@ -854,7 +854,7 @@ client.on('messageCreate', async (message) => {
             console.log(`[콤보 디버깅] 저장된 데이터:`, comboData[serverId][userId][activeCharacterName][comboName]);
             
             try {
-                saveComboData(comboData);
+                saveComboData(comboData);  // comboData 인자 전달
                 console.log(`[콤보 디버깅] 파일 저장 완료`);
             } catch (error) {
                 console.error(`[콤보 디버깅] ❌ 파일 저장 실패:`, error);
@@ -934,7 +934,7 @@ client.on('messageCreate', async (message) => {
 
             // 콤보 삭제
             delete comboData[serverId][userId][activeCharacterName][comboName];
-            saveComboData(comboData);
+            saveComboData(comboData);  // comboData 인자 전달
 
             return message.channel.send(`🗑️ **${activeCharacterName}**의 콤보 **"${comboName}"**가 삭제되었습니다.`);
         }
