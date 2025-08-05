@@ -321,7 +321,8 @@ client.on('messageCreate', async (message) => {
                                    '> - `100↑` : 침식률이 **100 이상**일 때 적용  \n' +
                                    '> - `130↑` : 침식률이 **130 이상**일 때 적용  \n' +
                                    '> **예시:** `!콤보 "연속 사격" 99↓ 《C: 발로르(2) + 흑의 철퇴(4)》`  \n' +
-                                   '> `!@"콤보 이름"` - 침식률에 맞는 콤보를 자동 검색 후 출력'
+                                   '> `!@"콤보 이름"` - 침식률에 맞는 콤보를 자동 검색 후 출력  \n' +
+                                   '> `!콤보삭제` `"콤보 이름"` - 특정 콤보를 삭제합니다.'
                         }
                     ]
                 },
@@ -578,10 +579,11 @@ client.on('messageCreate', async (message) => {
                 }
             }
 
-            // 콤보 출력
-            if (comboData[serverId] && comboData[serverId][userId] && comboData[serverId][userId][activeCharacterName]) {
+            // 콤보 출력 - 최신 데이터를 파일에서 직접 로드
+            const currentComboData = loadComboData();
+            if (currentComboData[serverId] && currentComboData[serverId][userId] && currentComboData[serverId][userId][activeCharacterName]) {
                 response += `\n${characterEmoji}  **콤보** \n`;
-                for (let comboName in comboData[serverId][userId][activeCharacterName]) {
+                for (let comboName in currentComboData[serverId][userId][activeCharacterName]) {
                     response += `> ㆍ **${comboName}**\n`;
                 }
             }
