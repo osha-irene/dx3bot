@@ -409,7 +409,7 @@ client.on('messageCreate', async (message) => {
             saveData(data);
             
             let response = `✅ **${characterName}**의 항목이 설정되었습니다.\n`;
-            response += `📊 **설정된 항목:** ${updatedAttributes.join(', ')}`;
+            response += `**설정된 항목:** ${updatedAttributes.join(', ')}`;
             
             message.channel.send(response);
         }
@@ -1103,3 +1103,4 @@ client.on('error', async (error) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
