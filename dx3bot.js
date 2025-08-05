@@ -1024,7 +1024,6 @@ if (message.content.startsWith('!리셋')) {
 
 
 
-
 // 등장침식 요청을 보낸 사용자 추적 (서버별 저장)
 let erosionRequesters = {};
 
@@ -1511,5 +1510,6 @@ client.on('messageCreate', async (message) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
 
 
