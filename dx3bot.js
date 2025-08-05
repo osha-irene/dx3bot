@@ -967,29 +967,42 @@ if (message.content.startsWith('!리셋')) {
         return message.reply(`⚠️ **${activeCharacterName}**의 데이터가 존재하지 않습니다.`);
     }
 
-    // **전체 리셋**
+    // ✅ 전체 리셋
     if (args.length === 0) {
         delete data[serverId][userId][activeCharacterName];
-        if (comboData[activeCharacterName]) {
-            delete comboData[activeCharacterName];
+
+        if (
+            comboData[serverId] &&
+            comboData[serverId][userId] &&
+            comboData[serverId][userId][activeCharacterName]
+        ) {
+            delete comboData[serverId][userId][activeCharacterName];
         }
+
         saveData(data);
         saveComboData();
+
         return message.channel.send(`✅ **${activeCharacterName}**의 모든 데이터가 초기화되었습니다.`);
     }
 
     let resetType = args.join(' ').toLowerCase(); // 명령어 인식
 
-    // **콤보 리셋**
+    // ✅ 콤보 리셋
     if (resetType === "콤보") {
-        if (comboData[activeCharacterName]) {
-            delete comboData[activeCharacterName];
+        if (
+            comboData[serverId] &&
+            comboData[serverId][userId] &&
+            comboData[serverId][userId][activeCharacterName]
+        ) {
+            delete comboData[serverId][userId][activeCharacterName];
+            saveComboData();
+            return message.channel.send(`✅ **${activeCharacterName}**의 모든 콤보가 삭제되었습니다.`);
+        } else {
+            return message.channel.send(`⚠️ **${activeCharacterName}**에게 저장된 콤보가 없습니다.`);
         }
-        saveComboData();
-        return message.channel.send(`✅ **${activeCharacterName}**의 모든 콤보가 삭제되었습니다.`);
     }
 
-    // **로이스 리셋**
+    // ✅ 로이스 리셋
     if (resetType === "로이스") {
         if (data[serverId][userId][activeCharacterName].lois) {
             delete data[serverId][userId][activeCharacterName].lois;
@@ -1000,7 +1013,7 @@ if (message.content.startsWith('!리셋')) {
         }
     }
 
-    // **특정 속성 리셋**
+    // ✅ 특정 속성 리셋
     let statName = resetType;
     if (data[serverId][userId][activeCharacterName][statName] !== undefined) {
         delete data[serverId][userId][activeCharacterName][statName];
@@ -1010,6 +1023,7 @@ if (message.content.startsWith('!리셋')) {
         return message.channel.send(`⚠️ **${activeCharacterName}**의 '${statName}' 데이터를 찾을 수 없습니다.`);
     }
 }
+
 
 
 // 등장침식 요청을 보낸 사용자 추적 (서버별 저장)
@@ -1498,3 +1512,4 @@ client.on('messageCreate', async (message) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
