@@ -773,29 +773,50 @@ client.on('messageCreate', async (message) => {
 
         // ==================== 콤보 명령어 ====================
         else if (message.content.startsWith('!콤보')) {
+            console.log(`[디버깅] !콤보 명령어 실행됨: ${message.content}`);
+            
             const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
             const match = message.content.match(regex);
 
+            console.log(`[디버깅] 정규식 매치 결과:`, match);
+
             if (!match) {
-                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
+                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`\n📌 **예시:** `!콤보 "연속 사격" 99↓ 《C: 발로르(2) + 흑의 철퇴(4)》`');
             }
 
             let comboName = match[1] || match[2] || match[3];
             let condition = match[4];
             let comboDescription = match[5];
 
+            console.log(`[디버깅] 추출된 데이터 - 콤보명: "${comboName}", 조건: "${condition}", 설명: "${comboDescription}"`);
+
             let activeCharacterName = activeCharacter[serverId]?.[userId];
+            console.log(`[디버깅] 활성 캐릭터: "${activeCharacterName}"`);
+
             if (!activeCharacterName) {
                 return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
             }
 
-            if (!comboData[serverId]) comboData[serverId] = {};
-            if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
-            if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
-            if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
+            // 최신 콤보 데이터 로드
+            let currentComboData = loadComboData();
+            console.log(`[디버깅] 현재 콤보 데이터 구조:`, JSON.stringify(currentComboData, null, 2));
 
-            comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-            saveComboData(comboData);
+            if (!currentComboData[serverId]) currentComboData[serverId] = {};
+            if (!currentComboData[serverId][userId]) currentComboData[serverId][userId] = {};
+            if (!currentComboData[serverId][userId][activeCharacterName]) currentComboData[serverId][userId][activeCharacterName] = {};
+            if (!currentComboData[serverId][userId][activeCharacterName][comboName]) currentComboData[serverId][userId][activeCharacterName][comboName] = {};
+
+            currentComboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
+            
+            console.log(`[디버깅] 저장할 콤보 데이터:`, currentComboData[serverId][userId][activeCharacterName][comboName]);
+
+            // 파일에 저장
+            saveComboData(currentComboData);
+            
+            // 전역 변수도 업데이트
+            comboData = currentComboData;
+
+            console.log(`[디버깅] 콤보 저장 완료`);
 
             return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
         }
