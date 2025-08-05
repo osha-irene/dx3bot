@@ -947,8 +947,6 @@ if (message.content.startsWith('!캐릭터리셋')) {
         }
     }
 }
-
-// !리셋 명령어 (서버별 활성 캐릭터 인식 추가)
 if (message.content.startsWith('!리셋')) {
     const args = message.content.split(' ').slice(1);
     const serverId = message.guild.id;
@@ -1023,6 +1021,7 @@ if (message.content.startsWith('!리셋')) {
         return message.channel.send(`⚠️ **${activeCharacterName}**의 '${statName}' 데이터를 찾을 수 없습니다.`);
     }
 }
+
 
 
 
@@ -1512,4 +1511,5 @@ client.on('messageCreate', async (message) => {
 
 client.login(token);
 console.log("✅ 디스코드 봇이 로그인되었습니다!");
+
 
