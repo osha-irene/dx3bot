@@ -789,19 +789,15 @@ client.on('messageCreate', async (message) => {
                 return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
             }
             
-            // 최신 콤보 데이터 로드
-            let currentComboData = loadComboData();
+            // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
+            if (!comboData[serverId]) comboData[serverId] = {};
+            if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
+            if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
+            if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
             
-            if (!currentComboData[serverId]) currentComboData[serverId] = {};
-            if (!currentComboData[serverId][userId]) currentComboData[serverId][userId] = {};
-            if (!currentComboData[serverId][userId][activeCharacterName]) currentComboData[serverId][userId][activeCharacterName] = {};
-            if (!currentComboData[serverId][userId][activeCharacterName][comboName]) currentComboData[serverId][userId][activeCharacterName][comboName] = {};
-            
-            currentComboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-            saveComboData(currentComboData);
-            
-            // 전역 변수도 업데이트
-            comboData = currentComboData;
+            // 콤보 데이터 저장
+            comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
+            saveComboData(comboData);
             
             return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
         }
@@ -844,7 +840,9 @@ client.on('messageCreate', async (message) => {
             }
 
             if (selectedCombo) {
-                return message.channel.send(`> **${selectedCondition} 【${comboName}】**\n> ${selectedCombo}`);
+                // | 기호를 기준으로 줄바꿈 처리
+                const formattedCombo = selectedCombo.replace(/\s*\|\s*/g, '\n> ');
+                return message.channel.send(`> **${selectedCondition} 【${comboName}】**\n> ${formattedCombo}`);
             } else {
                 return message.channel.send(`❌ 침식률 조건에 맞는 '${comboName}' 콤보를 찾을 수 없습니다.`);
             }
