@@ -362,18 +362,21 @@ client.on('messageCreate', async (message) => {
             const match = message.content.match(regex);
 
             if (!match) {
-                return message.channel.send('❌ 사용법: `!시트입력 "캐릭터 이름" [항목1] [값1] [항목2] [값2] ...`');
+                return message.channel.send('❌ 사용법: `!시트입력 "캐릭터 이름" [항목1] [값1] [항목2] [값2] ...`\n📌 **예시:** `!시트입력 "와타누키 유우" HP 24 침식률 30 육체 1 백병 1`');
             }
 
             const characterName = match[1] || match[2] || match[3];
             const args = match[4].split(/\s+/);
             if (args.length < 2 || args.length % 2 !== 0) {
-                return message.channel.send('❌ 속성은 최소한 하나 이상 입력해야 하며, 속성과 값은 짝수여야 합니다.');
+                return message.channel.send('❌ 속성은 최소한 하나 이상 입력해야 하며, 속성과 값은 짝수여야 합니다.\n📌 **예시:** `!시트입력 "캐릭터 이름" HP 24 침식률 30 육체 1`');
             }
 
             if (!data[serverId]) data[serverId] = {};
             if (!data[serverId][userId]) data[serverId][userId] = {};
             if (!data[serverId][userId][characterName]) data[serverId][userId][characterName] = {};
+
+            let updatedAttributes = [];
+            let currentErosion = 0;
 
             for (let i = 0; i < args.length; i += 2) {
                 const attribute = args[i];
@@ -384,10 +387,31 @@ client.on('messageCreate', async (message) => {
                 }
 
                 data[serverId][userId][characterName][attribute] = value;
+                updatedAttributes.push(`${attribute}: ${value}`);
+
+                // 침식률이 설정된 경우 추적
+                if (attribute === '침식률') {
+                    currentErosion = value;
+                }
+            }
+
+            // 침식률이 설정된 경우 침식D 자동 계산
+            if (currentErosion > 0) {
+                const characterData = data[serverId][userId][characterName];
+                const erosionMessages = updateErosionD(characterData, currentErosion);
+                
+                // 침식D가 업데이트된 경우 알림
+                if (erosionMessages.length > 0) {
+                    updatedAttributes.push(`침식D: ${characterData.침식D}`);
+                }
             }
 
             saveData(data);
-            message.channel.send(`✅ **${characterName}**의 항목이 설정되었습니다.`);
+            
+            let response = `✅ **${characterName}**의 항목이 설정되었습니다.\n`;
+            response += `📊 **설정된 항목:** ${updatedAttributes.join(', ')}`;
+            
+            message.channel.send(response);
         }
 
         // ==================== 캐릭터 지정/해제 명령어 ====================
