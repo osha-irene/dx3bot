@@ -194,7 +194,7 @@ client.once(Events.ClientReady, readyClient => {
     console.log(`✅ Logged in as ${readyClient.user.tag}!`);
 });
 
-// ==================== 명령어 처리 ====================
+// ==================== 메인 명령어 처리 ====================
 
 client.on('messageCreate', async (message) => {
     if (message.author.bot || !message.guild) return;
@@ -202,7 +202,6 @@ client.on('messageCreate', async (message) => {
     const serverId = message.guild.id;
     const userId = message.author.id;
     const data = loadData();
-    const args = message.content.trim().split(' ');
 
     try {
         // ==================== 업데이트 명령어 ====================
@@ -996,13 +995,6 @@ client.on('messageCreate', async (message) => {
             }
         } catch (fetchError) {
             console.error("❌ 봇 관리자 정보를 가져오는 중 오류 발생:", fetchError);
-    }
-});
-
-// ==================== 봇 로그인 ====================
-
-client.login(token);
-console.log("✅ 디스코드 봇이 로그인되었습니다!");
         }
     }
 });
@@ -1080,3 +1072,10 @@ client.on('error', async (error) => {
         }
     } catch (fetchError) {
         console.error("❌ 봇 관리자 정보를 가져오는 중 오류 발생:", fetchError);
+    }
+});
+
+// ==================== 봇 로그인 ====================
+
+client.login(token);
+console.log("✅ 디스코드 봇이 로그인되었습니다!");
