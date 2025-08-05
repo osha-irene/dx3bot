@@ -773,7 +773,8 @@ client.on('messageCreate', async (message) => {
 
         // ==================== 콤보 명령어 ====================
         else if (message.content.startsWith('!콤보')) {
-            const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
+            // 더 안전한 정규식으로 변경 - 콤보 데이터 부분에서 모든 문자 허용
+            const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+?))\s+(\d+[↑↓])\s+(.*)$/;
             const match = message.content.match(regex);
             
             if (!match) {
@@ -781,8 +782,8 @@ client.on('messageCreate', async (message) => {
             }
             
             let comboName = match[1] || match[2] || match[3];
-            let condition = match[4];
-            let comboDescription = match[5];
+            let condition = match[4];  // 침식률 조건 (숫자+↑/↓ 패턴으로 더 정확하게)
+            let comboDescription = match[5];  // 나머지 모든 문자 (.*)
             
             let activeCharacterName = activeCharacter[serverId]?.[userId];
             if (!activeCharacterName) {
