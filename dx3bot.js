@@ -410,7 +410,7 @@ client.on('messageCreate', async (message) => {
             saveData(data);
             
             let response = `✅ **${characterName}**의 항목이 설정되었습니다.\n`;
-            response += `**설정된 항목:** ${updatedAttributes.join(', ')}`;
+            response += `📊 **설정된 항목:** ${updatedAttributes.join(', ')}`;
             
             message.channel.send(response);
         }
@@ -773,101 +773,119 @@ client.on('messageCreate', async (message) => {
 
         // ==================== 콤보 명령어 ====================
         else if (message.content.startsWith('!콤보')) {
-            console.log(`[디버깅] !콤보 명령어 실행됨: ${message.content}`);
+            console.log(`[디버깅] !콤보 명령어 실행됨. 메시지 길이: ${message.content.length}`);
             
-            // 더 유연한 파싱 방식으로 변경
-            const parts = message.content.split(/\s+/);
+            // 메시지 길이 체크 (디스코드 메시지 최대 길이는 2000자)
+            if (message.content.length > 1900) {
+                return message.channel.send('❌ 콤보 데이터가 너무 깁니다. 1900자 이하로 줄여주세요.');
+            }
             
-            if (parts.length < 4) {
-                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`\n📌 **예시:** `!콤보 "연속 사격" 99↓ 《C: 발로르(2) + 흑의 철퇴(4)》`');
+            // 전체 메시지에서 !콤보 부분 제거
+            let fullContent = message.content.substring(5).trim(); // "!콤보 " 제거
+            console.log(`[디버깅] 원본 내용: ${fullContent}`);
+            
+            if (!fullContent) {
+                return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
             }
 
-            let comboName;
-            let condition;
-            let comboDescription;
-            let startIndex = 1; // !콤보 다음부터 시작
+            let comboName = '';
+            let condition = '';
+            let comboDescription = '';
 
-            // 콤보 이름 추출 (따옴표 또는 대괄호로 감싸인 경우)
-            if (parts[startIndex].startsWith('"') || parts[startIndex].startsWith('[')) {
-                // 따옴표나 대괄호로 시작하는 경우
-                let nameBuilder = [];
-                let foundEnd = false;
-                
-                for (let i = startIndex; i < parts.length; i++) {
-                    nameBuilder.push(parts[i]);
-                    if (parts[i].endsWith('"') || parts[i].endsWith(']')) {
-                        startIndex = i + 1;
-                        foundEnd = true;
-                        break;
+            try {
+                // 1단계: 콤보 이름 추출
+                if (fullContent.startsWith('"')) {
+                    // 따옴표로 감싸진 경우
+                    const endQuote = fullContent.indexOf('"', 1);
+                    if (endQuote === -1) {
+                        return message.channel.send('❌ 콤보 이름의 따옴표가 닫히지 않았습니다.');
                     }
+                    comboName = fullContent.substring(1, endQuote);
+                    fullContent = fullContent.substring(endQuote + 1).trim();
+                } else if (fullContent.startsWith('[')) {
+                    // 대괄호로 감싸진 경우
+                    const endBracket = fullContent.indexOf(']', 1);
+                    if (endBracket === -1) {
+                        return message.channel.send('❌ 콤보 이름의 대괄호가 닫히지 않았습니다.');
+                    }
+                    comboName = fullContent.substring(1, endBracket);
+                    fullContent = fullContent.substring(endBracket + 1).trim();
+                } else {
+                    // 공백까지가 콤보 이름
+                    const spaceIndex = fullContent.indexOf(' ');
+                    if (spaceIndex === -1) {
+                        return message.channel.send('❌ 침식률 조건과 콤보 데이터가 필요합니다.');
+                    }
+                    comboName = fullContent.substring(0, spaceIndex);
+                    fullContent = fullContent.substring(spaceIndex + 1).trim();
                 }
+
+                console.log(`[디버깅] 콤보명: "${comboName}"`);
+                console.log(`[디버깅] 남은 내용: "${fullContent}"`);
+
+                // 2단계: 침식률 조건 추출 (숫자 + ↑ 또는 ↓)
+                const conditionRegex = /^(\d+[↑↓])\s*/;
+                const conditionMatch = fullContent.match(conditionRegex);
                 
-                if (!foundEnd) {
-                    return message.channel.send('❌ 콤보 이름의 따옴표나 대괄호가 제대로 닫히지 않았습니다.');
+                if (!conditionMatch) {
+                    return message.channel.send('❌ 침식률 조건을 찾을 수 없습니다. 형식: `99↓`, `100↑` 등');
                 }
-                
-                comboName = nameBuilder.join(' ').replace(/^["'\[]|["'\]]$/g, ''); // 앞뒤 따옴표/대괄호 제거
-            } else {
-                // 일반 텍스트인 경우
-                comboName = parts[startIndex];
-                startIndex++;
+
+                condition = conditionMatch[1];
+                fullContent = fullContent.substring(conditionMatch[0].length).trim();
+
+                console.log(`[디버깅] 조건: "${condition}"`);
+                console.log(`[디버깅] 최종 남은 내용: "${fullContent}"`);
+
+                // 3단계: 나머지를 모두 콤보 설명으로 사용
+                if (!fullContent) {
+                    return message.channel.send('❌ 콤보 데이터가 없습니다.');
+                }
+                comboDescription = fullContent;
+
+                console.log(`[디버깅] 최종 파싱 결과:`);
+                console.log(`[디버깅] - 콤보명: "${comboName}"`);
+                console.log(`[디버깅] - 조건: "${condition}"`);
+                console.log(`[디버깅] - 설명: "${comboDescription.substring(0, 50)}..."`);
+
+            } catch (error) {
+                console.error(`[오류] 콤보 파싱 실패:`, error);
+                return message.channel.send('❌ 콤보 데이터 파싱 중 오류가 발생했습니다.');
             }
 
-            // 침식률 조건 추출
-            if (startIndex >= parts.length) {
-                return message.channel.send('❌ 침식률 조건이 없습니다. 예: `99↓` 또는 `100↑`');
-            }
-            condition = parts[startIndex];
-            startIndex++;
-
-            // 나머지 모든 부분을 콤보 설명으로 사용
-            if (startIndex >= parts.length) {
-                return message.channel.send('❌ 콤보 데이터가 없습니다.');
-            }
-            comboDescription = parts.slice(startIndex).join(' ');
-
-            console.log(`[디버깅] 추출된 데이터 - 콤보명: "${comboName}", 조건: "${condition}", 설명: "${comboDescription}"`);
-
+            // 활성 캐릭터 확인
             let activeCharacterName = activeCharacter[serverId]?.[userId];
-            console.log(`[디버깅] 활성 캐릭터: "${activeCharacterName}"`);
-
             if (!activeCharacterName) {
                 return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
             }
 
-            // 조건 형식 검증
-            if (!condition.match(/^\d+[↑↓]$/)) {
-                return message.channel.send('❌ 침식률 조건 형식이 잘못되었습니다. 올바른 형식: `99↓`, `100↑`, `130↑` 등');
-            }
-
-            // 최신 콤보 데이터 로드
-            let currentComboData = loadComboData();
-            console.log(`[디버깅] 현재 콤보 데이터 구조 확인 완료`);
-
-            if (!currentComboData[serverId]) currentComboData[serverId] = {};
-            if (!currentComboData[serverId][userId]) currentComboData[serverId][userId] = {};
-            if (!currentComboData[serverId][userId][activeCharacterName]) currentComboData[serverId][userId][activeCharacterName] = {};
-            if (!currentComboData[serverId][userId][activeCharacterName][comboName]) currentComboData[serverId][userId][activeCharacterName][comboName] = {};
-
-            currentComboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-            
-            console.log(`[디버깅] 저장할 콤보 데이터 준비 완료`);
-
-            // 파일에 저장
             try {
+                // 콤보 데이터 저장
+                let currentComboData = loadComboData();
+                
+                // 데이터 구조 초기화
+                if (!currentComboData[serverId]) currentComboData[serverId] = {};
+                if (!currentComboData[serverId][userId]) currentComboData[serverId][userId] = {};
+                if (!currentComboData[serverId][userId][activeCharacterName]) currentComboData[serverId][userId][activeCharacterName] = {};
+                if (!currentComboData[serverId][userId][activeCharacterName][comboName]) currentComboData[serverId][userId][activeCharacterName][comboName] = {};
+
+                // 콤보 저장
+                currentComboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
+                
+                // 파일에 저장
                 saveComboData(currentComboData);
-                console.log(`[디버깅] 콤보 데이터 파일 저장 완료`);
+                
+                // 전역 변수도 업데이트
+                comboData = currentComboData;
+
+                console.log(`[디버깅] 콤보 저장 성공`);
+
+                return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"** (조건: ${condition})가 저장되었습니다.`);
+
             } catch (error) {
-                console.error(`[오류] 콤보 데이터 저장 실패:`, error);
-                return message.channel.send('❌ 콤보 저장 중 오류가 발생했습니다. 관리자에게 문의하세요.');
+                console.error(`[오류] 콤보 저장 실패:`, error);
+                return message.channel.send(`❌ 콤보 저장 중 오류가 발생했습니다: ${error.message}`);
             }
-            
-            // 전역 변수도 업데이트
-            comboData = currentComboData;
-
-            console.log(`[디버깅] 콤보 저장 완료`);
-
-            return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"** (조건: ${condition})가 저장되었습니다.`);
         }
 
         // ==================== 콤보 호출 명령어 ====================
