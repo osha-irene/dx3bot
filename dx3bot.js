@@ -1124,6 +1124,36 @@ client.on('messageCreate', async (message) => {
         return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
     }
 
+    // 콤보 삭제 기능 추가
+    if (message.content.startsWith('!콤보삭제')) {
+        const serverId = message.guild.id;
+        const userId = message.author.id;
+
+        // 콤보 이름 추출
+        const args = message.content.split(' ').slice(1);
+        if (args.length < 1) {
+            return message.channel.send('❌ 사용법: `!콤보삭제 ["콤보 이름"]`');
+        }
+
+        const comboName = utils.extractName(args.join(' '));
+        const activeCharacterName = activeCharacter[serverId]?.[userId];
+
+        if (!activeCharacterName) {
+            return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+        }
+
+        // 콤보 존재 확인
+        if (!comboData[serverId]?.[userId]?.[activeCharacterName]?.[comboName]) {
+            return message.channel.send(`❌ **${activeCharacterName}**에게 **"${comboName}"** 콤보가 존재하지 않습니다.`);
+        }
+
+        // 콤보 삭제
+        delete comboData[serverId][userId][activeCharacterName][comboName];
+        utils.saveComboData(comboData);
+
+        return message.channel.send(`🗑️ **${activeCharacterName}**의 콤보 **"${comboName}"**가 삭제되었습니다.`);
+    }
+
     await commandHandler.handle(message);
 });
 
