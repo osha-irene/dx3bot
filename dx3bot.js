@@ -289,7 +289,7 @@ class CommandHandler {
     async handleHelp(message) {
         const embed1 = new EmbedBuilder()
             .setColor(0x0099ff)
-            .setTitle('📖 DX3bot 명령어 목록 (1/3)')
+            .setTitle('📖 DX3bot 명령어 목록 (1/4)')
             .setDescription('DX3bot의 주요 기능을 안내합니다.')
             .addFields(
                 {
@@ -302,16 +302,24 @@ class CommandHandler {
                            '> `!시트확인` - 현재 활성 캐릭터의 정보를 확인합니다.'
                 },
                 {
+                    name: '🚀 **빠른 생성**',
+                    value: '> `!빠른생성` `[JSON데이터]` - JSON으로 캐릭터를 한 번에 생성합니다.\n' +
+                           '> **예시:**\n' +
+                           '> `!빠른생성 {"name":"테스트","params":[{"label":"육체","value":"3"}]}`\n' +
+                           '> JSON 형식으로 모든 캐릭터 정보를 한 번에 입력 가능!\n' +
+                           '> DX3 변환기와 연동하여 사용하세요.'
+                },
+                {
                     name: '📌 **상태 변경**',
-                    value: '> `!침식률+N`, `!HP-10`\n' +
+                    value: '> `!침식률+N`, `!HP-10`, `!능력치=5`\n' +
                            '> 특정 능력치 값을 증가/감소/설정합니다.\n' +
-                           '> **예시:** `!침식률+5`'
+                           '> **예시:** `!침식률+5`, `!HP-10`, `!육체=4`'
                 },
                 {
                     name: '🎲 **판정 시스템**',
                     value: '> `!판정` `[항목]` - 해당 능력으로 주사위를 굴립니다.\n' +
                            '> 침식D가 자동 적용됩니다.\n' +
-                           '> **예시:** `!판정 백병`'
+                           '> **예시:** `!판정 백병`, `!판정 정보:컴퓨터`'
                 },
                 {
                     name: '⚔ **등장 침식**',
@@ -321,11 +329,12 @@ class CommandHandler {
 
         const embed2 = new EmbedBuilder()
             .setColor(0x0099ff)
-            .setTitle('📖 DX3bot 명령어 목록 (2/3)')
+            .setTitle('📖 DX3bot 명령어 목록 (2/4)')
             .addFields(
                 {
                     name: '🎭 **캐릭터 상세 설정**',
-                    value: '> `!이모지` `[이모지]` - 캐릭터의 이모지를 설정합니다.\n' +
+                    value: '> `!코드네임` `"코드네임"` - 캐릭터의 코드네임을 설정합니다.\n' +
+                           '> `!이모지` `[이모지]` - 캐릭터의 이모지를 설정합니다.\n' +
                            '> `!커버` `[이름]` - 캐릭터의 커버를 설정합니다.\n' +
                            '> `!웍스` `[이름]` - 캐릭터의 웍스를 설정합니다.\n' +
                            '> `!브리드` `[퓨어/크로스/트라이]` - 브리드를 설정합니다.\n' +
@@ -351,7 +360,7 @@ class CommandHandler {
 
         const embed3 = new EmbedBuilder()
             .setColor(0x0099ff)
-            .setTitle('📖 DX3bot 명령어 목록 (3/3)')
+            .setTitle('📖 DX3bot 명령어 목록 (3/4)')
             .addFields(
                 {
                     name: '🔹 **로이스 시스템**',
@@ -364,11 +373,36 @@ class CommandHandler {
                            '> `!타이터스` `"이름"` - 해당 로이스를 타이터스로 변환'
                 },
                 {
+                    name: '⚡ **이펙트 시스템**',
+                    value: '> `!이펙트` `"이펙트명"` `[이펙트 설명]` - 이펙트를 등록합니다.\n' +
+                           '> **예시:** `!이펙트 "광전사" 공격력 +10, 크리티컬 +1`\n' +
+                           '> `!이펙트삭제` `"이펙트명"` - 해당 이펙트를 삭제합니다.\n' +
+                           '> 현재 적용중인 버프/디버프를 관리할 수 있습니다!'
+                }
+            );
+
+        const embed4 = new EmbedBuilder()
+            .setColor(0x0099ff)
+            .setTitle('📖 DX3bot 명령어 목록 (4/4)')
+            .addFields(
+                {
                     name: '🔧 **관리 명령어**',
                     value: '> `!리셋` - 현재 캐릭터의 모든 데이터를 초기화합니다.\n' +
                            '> `!리셋 콤보` - 콤보 데이터만 초기화\n' +
                            '> `!리셋 로이스` - 로이스 데이터만 초기화\n' +
+                           '> `!리셋 이펙트` - 이펙트 데이터만 초기화\n' +
                            '> `!캐릭터삭제` `"이름"` - 특정 캐릭터 데이터를 삭제'
+                },
+                {
+                    name: '💡 **추가 정보**',
+                    value: '> **📋 DX3 변환기**\n' +
+                           '> CCfolia JSON을 봇 명령어로 변환하는 웹 도구가 있습니다.\n' +
+                           '> 변환된 JSON을 `!빠른생성`으로 바로 사용 가능!\n' +
+                           '> \n' +
+                           '> **🎯 팁:**\n' +
+                           '> - 명령어는 `!도움`으로 언제든 확인 가능\n' +
+                           '> - 따옴표나 대괄호로 긴 이름도 입력 가능\n' +
+                           '> - 모든 기능은 서버별로 독립적으로 작동'
                 }
             )
             .setFooter({ text: '📌 이상이 있다면 언제든 오샤(@TRPG_sha)로 DM 해주세요!' });
@@ -376,6 +410,7 @@ class CommandHandler {
         await message.channel.send({ embeds: [embed1] });
         await message.channel.send({ embeds: [embed2] });
         await message.channel.send({ embeds: [embed3] });
+        await message.channel.send({ embeds: [embed4] });
     }
 
     // 시트 입력 명령어
@@ -536,6 +571,14 @@ class CommandHandler {
             response += `\n${characterEmoji}  **로이스**\n`;
             for (let lois of characterData.lois) {
                 response += `> ㆍ **${lois.name}** | ${lois.pEmotion} / ${lois.nEmotion} | ${lois.description}\n`;
+            }
+        }
+
+        // 이펙트 출력
+        if (characterData.effects && characterData.effects.length > 0) {
+            response += `\n${characterEmoji}  **이펙트**\n`;
+            for (let effect of characterData.effects) {
+                response += `> ㆍ **${effect.name}** | ${effect.description}\n`;
             }
         }
 
@@ -794,14 +837,14 @@ class CommandHandler {
             return message.channel.send(`✅ **${name}**의 모든 콤보가 삭제되었습니다.`);
         }
 
-        // 로이스 리셋
-        if (resetType === "로이스") {
-            if (activeChar.data.lois) {
-                delete activeChar.data.lois;
+        // 이펙트 리셋
+        if (resetType === "이펙트") {
+            if (activeChar.data.effects) {
+                delete activeChar.data.effects;
                 utils.saveData(data);
-                return message.channel.send(`✅ **${name}**의 모든 로이스가 삭제되었습니다.`);
+                return message.channel.send(`✅ **${name}**의 모든 이펙트가 삭제되었습니다.`);
             } else {
-                return message.channel.send(`⚠️ **${name}**에게 등록된 로이스가 없습니다.`);
+                return message.channel.send(`⚠️ **${name}**에게 등록된 이펙트가 없습니다.`);
             }
         }
 
@@ -1097,75 +1140,140 @@ client.on('messageCreate', async (message) => {
         // JSON 문자열 추출
         const jsonMatch = message.content.match(/!빠른생성\s+(.+)/);
         if (!jsonMatch) {
-            return message.channel.send('❌ 사용법: `!빠른생성 {"name":"캐릭터명","params":[{"label":"육체","value":"3"}]}`');
+            return message.channel.send('❌ 사용법: `!빠른생성 {"n":"캐릭터명","p":[["육체",3],["백병",5]],"s":[["HP",24]]}`\n💡 DX3 변환기에서 "빠른생성용" 버튼을 사용하세요!');
         }
 
         try {
             const jsonData = JSON.parse(jsonMatch[1]);
             
-            if (!jsonData.name) {
-                return message.channel.send('❌ 캐릭터 이름이 필요합니다. "name" 필드를 추가해주세요.');
+            // 축약된 필드명 지원 (n=name, p=params, s=status, c=combos, l=lois)
+            const characterName = jsonData.n || jsonData.name;
+            if (!characterName) {
+                return message.channel.send('❌ 캐릭터 이름이 필요합니다. "n" 또는 "name" 필드를 추가해주세요.');
             }
-
-            const characterName = jsonData.name;
 
             // 서버 데이터 구조 초기화
             if (!data[serverId]) data[serverId] = {};
             if (!data[serverId][userId]) data[serverId][userId] = {};
             if (!data[serverId][userId][characterName]) data[serverId][userId][characterName] = {};
 
-            // 기본 능력치 설정
-            if (jsonData.params) {
-                jsonData.params.forEach(param => {
-                    if (param.label && param.value !== undefined) {
-                        data[serverId][userId][characterName][param.label] = parseInt(param.value) || 0;
+            let addedItems = [];
+
+            // 능력치 설정 (축약형: [["육체", 3], ["백병", 5]] 또는 기존형)
+            const params = jsonData.p || jsonData.params;
+            if (params && Array.isArray(params)) {
+                params.forEach(param => {
+                    let label, value;
+                    if (Array.isArray(param)) {
+                        // 축약형: ["육체", 3]
+                        [label, value] = param;
+                    } else {
+                        // 기존형: {"label": "육체", "value": "3"}
+                        label = param.label;
+                        value = param.value;
+                    }
+                    
+                    if (label && value !== undefined) {
+                        data[serverId][userId][characterName][label] = parseInt(value) || 0;
+                        addedItems.push(`${label}: ${value}`);
                     }
                 });
             }
 
-            // 상태 설정
-            if (jsonData.status) {
-                jsonData.status.forEach(stat => {
-                    if (stat.label && stat.value !== undefined) {
-                        const label = stat.label === 'BN' ? '침식D' : stat.label;
-                        data[serverId][userId][characterName][label] = parseInt(stat.value) || 0;
+            // 상태 설정 (축약형: [["HP", 24], ["침식률", 30]] 또는 기존형)
+            const status = jsonData.s || jsonData.status;
+            if (status && Array.isArray(status)) {
+                status.forEach(stat => {
+                    let label, value;
+                    if (Array.isArray(stat)) {
+                        // 축약형: ["HP", 24]
+                        [label, value] = stat;
+                    } else {
+                        // 기존형: {"label": "HP", "value": 24}
+                        label = stat.label;
+                        value = stat.value;
+                    }
+                    
+                    if (label && value !== undefined) {
+                        const finalLabel = label === 'BN' ? '침식D' : label;
+                        data[serverId][userId][characterName][finalLabel] = parseInt(value) || 0;
+                        addedItems.push(`${finalLabel}: ${value}`);
                     }
                 });
             }
 
-            // 기타 정보 설정
-            ['cover', 'works', 'breed', 'syndromes', 'awakening', 'impulse', 'codeName', 'emoji'].forEach(field => {
-                if (jsonData[field]) {
-                    data[serverId][userId][characterName][field] = jsonData[field];
+            // 기타 정보 설정 (축약형)
+            const infoMap = {
+                'cn': 'codeName', 'e': 'emoji', 'cv': 'cover', 'w': 'works', 
+                'br': 'breed', 'sy': 'syndromes', 'aw': 'awakening', 'im': 'impulse'
+            };
+            
+            Object.entries(infoMap).forEach(([short, full]) => {
+                const value = jsonData[short] || jsonData[full];
+                if (value) {
+                    data[serverId][userId][characterName][full] = value;
+                    addedItems.push(`${full}: ${value}`);
                 }
             });
 
             // D-Lois 설정
-            if (jsonData.dloisNo && jsonData.dloisName) {
-                data[serverId][userId][characterName].dloisNo = jsonData.dloisNo;
-                data[serverId][userId][characterName].dloisName = jsonData.dloisName;
+            const dlNo = jsonData.dn || jsonData.dloisNo;
+            const dlName = jsonData.dl || jsonData.dloisName;
+            if (dlNo && dlName) {
+                data[serverId][userId][characterName].dloisNo = dlNo;
+                data[serverId][userId][characterName].dloisName = dlName;
+                addedItems.push(`D-Lois: No.${dlNo} ${dlName}`);
             }
 
-            // 로이스 설정
-            if (jsonData.lois && Array.isArray(jsonData.lois)) {
-                data[serverId][userId][characterName].lois = jsonData.lois;
+            // 로이스 설정 (축약형: [["이름", "P감정", "N감정", "설명"]])
+            const lois = jsonData.l || jsonData.lois;
+            if (lois && Array.isArray(lois)) {
+                data[serverId][userId][characterName].lois = [];
+                lois.forEach(loisData => {
+                    let loisObj;
+                    if (Array.isArray(loisData)) {
+                        // 축약형: ["이름", "P감정", "N감정", "설명"]
+                        const [name, pEmotion, nEmotion, description] = loisData;
+                        const formattedP = pEmotion.includes('*') ? `【P: ${pEmotion.replace('*', '')}】` : `P: ${pEmotion}`;
+                        const formattedN = nEmotion.includes('*') ? `【N: ${nEmotion.replace('*', '')}】` : `N: ${nEmotion}`;
+                        loisObj = { name, pEmotion: formattedP, nEmotion: formattedN, description };
+                    } else {
+                        // 기존형
+                        loisObj = loisData;
+                    }
+                    data[serverId][userId][characterName].lois.push(loisObj);
+                });
+                addedItems.push(`로이스 ${lois.length}개`);
             }
 
-            // 콤보 설정
-            if (jsonData.combos && Array.isArray(jsonData.combos)) {
+            // 콤보 설정 (축약형: [["콤보명", "조건", "설명"]])
+            const combos = jsonData.c || jsonData.combos;
+            if (combos && Array.isArray(combos)) {
                 if (!comboData[serverId]) comboData[serverId] = {};
                 if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
                 if (!comboData[serverId][userId][characterName]) comboData[serverId][userId][characterName] = {};
 
-                jsonData.combos.forEach(combo => {
-                    if (combo.name && combo.condition && combo.description) {
-                        if (!comboData[serverId][userId][characterName][combo.name]) {
-                            comboData[serverId][userId][characterName][combo.name] = {};
+                combos.forEach(comboData_item => {
+                    let name, condition, description;
+                    if (Array.isArray(comboData_item)) {
+                        // 축약형: ["콤보명", "99↓", "《이펙트》"]
+                        [name, condition, description] = comboData_item;
+                    } else {
+                        // 기존형
+                        name = comboData_item.name;
+                        condition = comboData_item.condition;
+                        description = comboData_item.description;
+                    }
+                    
+                    if (name && condition && description) {
+                        if (!comboData[serverId][userId][characterName][name]) {
+                            comboData[serverId][userId][characterName][name] = {};
                         }
-                        comboData[serverId][userId][characterName][combo.name][combo.condition] = combo.description;
+                        comboData[serverId][userId][characterName][name][condition] = description;
                     }
                 });
                 utils.saveComboData(comboData);
+                addedItems.push(`콤보 ${combos.length}개`);
             }
 
             // 활성 캐릭터로 자동 지정
@@ -1175,10 +1283,14 @@ client.on('messageCreate', async (message) => {
 
             utils.saveData(data);
 
-            return message.channel.send(`🚀 **${characterName}** 캐릭터가 빠르게 생성되고 활성화되었습니다!`);
+            const summary = addedItems.length > 5 ? 
+                `${addedItems.slice(0, 5).join(', ')} 외 ${addedItems.length - 5}개` : 
+                addedItems.join(', ');
+
+            return message.channel.send(`🚀 **${characterName}** 캐릭터가 빠르게 생성되었습니다!\n📝 추가된 항목: ${summary}`);
 
         } catch (error) {
-            return message.channel.send(`❌ JSON 파싱 오류: ${error.message}\n올바른 JSON 형식인지 확인해주세요.`);
+            return message.channel.send(`❌ JSON 파싱 오류: ${error.message}\n💡 변환기에서 생성된 JSON을 복사해서 사용해주세요.`);
         }
     }
 
