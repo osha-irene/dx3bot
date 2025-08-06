@@ -599,17 +599,16 @@ class CommandHandler {
         message.channel.send(`1d10 등장침식 <@${message.author.id}>`);
     }
 
-// 콤보 명령어 (수정된 버전)
+// 콤보 명령어 (원본 방식 그대로)
 async handleCombo(message, args) {
     if (!message.guild) return;
 
     const serverId = message.guild.id;
     const userId = message.author.id;
 
-    // 원본처럼 더 유연한 파싱 방식 사용
-    const fullArgs = args.join(' ');
-    const regex = /^(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
-    const match = fullArgs.match(regex);
+    // 원본과 동일한 정규식 사용
+    const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
+    const match = message.content.match(regex);  // args가 아닌 message.content 전체를 매칭
 
     if (!match) {
         return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
@@ -618,7 +617,7 @@ async handleCombo(message, args) {
     // 따옴표 또는 대괄호가 있으면 제거하여 콤보 이름 추출
     let comboName = match[1] || match[2] || match[3];
     let condition = match[4];  // 침식률 조건 (예: 99↓ 또는 100↑)
-    let comboDescription = match[5];  // 콤보 데이터 (나머지 모든 텍스트)
+    let comboDescription = match[5];  // 콤보 데이터
 
     const activeChar = this.getActiveCharacter(message);
     if (!activeChar) {
@@ -1233,4 +1232,5 @@ client.login(token)
         console.error("❌ 봇 로그인 실패:", error);
         process.exit(1);
     });
+
 
