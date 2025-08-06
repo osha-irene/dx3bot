@@ -599,16 +599,16 @@ class CommandHandler {
         message.channel.send(`1d10 등장침식 <@${message.author.id}>`);
     }
 
-// 콤보 명령어 (원본 방식 그대로)
-async handleCombo(message, args) {
-    if (!message.guild) return;
+// 콤보 명령어 처리 (원본과 동일)
+if (message.content.startsWith('!콤보')) {
+    if (!message.guild) return; // DM 방지
 
     const serverId = message.guild.id;
     const userId = message.author.id;
 
-    // 원본과 동일한 정규식 사용
+    // 정규식으로 콤보명과 나머지 데이터 분리
     const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
-    const match = message.content.match(regex);  // args가 아닌 message.content 전체를 매칭
+    const match = message.content.match(regex);
 
     if (!match) {
         return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
@@ -619,22 +619,22 @@ async handleCombo(message, args) {
     let condition = match[4];  // 침식률 조건 (예: 99↓ 또는 100↑)
     let comboDescription = match[5];  // 콤보 데이터
 
-    const activeChar = this.getActiveCharacter(message);
-    if (!activeChar) {
-        return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+    let activeCharacterName = activeCharacter[serverId]?.[userId];
+    if (!activeCharacterName) {
+        return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
     }
 
     // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
     if (!comboData[serverId]) comboData[serverId] = {};
     if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
-    if (!comboData[serverId][userId][activeChar.name]) comboData[serverId][userId][activeChar.name] = {};
-    if (!comboData[serverId][userId][activeChar.name][comboName]) comboData[serverId][userId][activeChar.name][comboName] = {};
+    if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
+    if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
 
     // 콤보 데이터 저장
-    comboData[serverId][userId][activeChar.name][comboName][condition] = comboDescription;
+    comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
     utils.saveComboData(comboData);
 
-    return message.channel.send(`✅ **${activeChar.name}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
+    return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
 }
 
     // 콤보 호출 명령어 (!@콤보이름)
@@ -1232,5 +1232,6 @@ client.login(token)
         console.error("❌ 봇 로그인 실패:", error);
         process.exit(1);
     });
+
 
 
