@@ -211,7 +211,7 @@ class CommandHandler {
         this.commands.set('판정', this.handleRoll.bind(this));
         this.commands.set('등침', this.handleEntryErosion.bind(this));
         this.commands.set('등장침식', this.handleEntryErosion.bind(this));
-        this.commands.set('콤보', this.handleCombo.bind(this));
+        // '콤보' 명령어는 직접 처리하므로 제거
         this.commands.set('로이스', this.handleLois.bind(this));
         this.commands.set('로이스삭제', this.handleDeleteLois.bind(this));
         this.commands.set('타이터스', this.handleTitus.bind(this));
@@ -598,44 +598,6 @@ class CommandHandler {
 
         message.channel.send(`1d10 등장침식 <@${message.author.id}>`);
     }
-
-// 콤보 명령어 처리 (원본과 동일)
-if (message.content.startsWith('!콤보')) {
-    if (!message.guild) return; // DM 방지
-
-    const serverId = message.guild.id;
-    const userId = message.author.id;
-
-    // 정규식으로 콤보명과 나머지 데이터 분리
-    const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
-    const match = message.content.match(regex);
-
-    if (!match) {
-        return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
-    }
-
-    // 따옴표 또는 대괄호가 있으면 제거하여 콤보 이름 추출
-    let comboName = match[1] || match[2] || match[3];
-    let condition = match[4];  // 침식률 조건 (예: 99↓ 또는 100↑)
-    let comboDescription = match[5];  // 콤보 데이터
-
-    let activeCharacterName = activeCharacter[serverId]?.[userId];
-    if (!activeCharacterName) {
-        return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
-    }
-
-    // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
-    if (!comboData[serverId]) comboData[serverId] = {};
-    if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
-    if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
-    if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
-
-    // 콤보 데이터 저장
-    comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
-    utils.saveComboData(comboData);
-
-    return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
-}
 
     // 콤보 호출 명령어 (!@콤보이름)
     async handleComboCall(message) {
@@ -1126,6 +1088,42 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     if (!message.guild) return;
 
+    // 콤보 명령어는 직접 처리 (원본과 동일한 방식)
+    if (message.content.startsWith('!콤보')) {
+        const serverId = message.guild.id;
+        const userId = message.author.id;
+
+        // 정규식으로 콤보명과 나머지 데이터 분리
+        const regex = /^!콤보\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(\S+)\s+(.+)$/;
+        const match = message.content.match(regex);
+
+        if (!match) {
+            return message.channel.send('❌ 사용법: `!콤보 ["콤보 이름"] [침식률조건] [콤보 데이터]`');
+        }
+
+        // 따옴표 또는 대괄호가 있으면 제거하여 콤보 이름 추출
+        let comboName = match[1] || match[2] || match[3];
+        let condition = match[4];  // 침식률 조건 (예: 99↓ 또는 100↑)
+        let comboDescription = match[5];  // 콤보 데이터
+
+        let activeCharacterName = activeCharacter[serverId]?.[userId];
+        if (!activeCharacterName) {
+            return message.reply(`${message.author.tag}님, 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+        }
+
+        // 서버별, 사용자별, 캐릭터별 데이터 저장 구조 생성
+        if (!comboData[serverId]) comboData[serverId] = {};
+        if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
+        if (!comboData[serverId][userId][activeCharacterName]) comboData[serverId][userId][activeCharacterName] = {};
+        if (!comboData[serverId][userId][activeCharacterName][comboName]) comboData[serverId][userId][activeCharacterName][comboName] = {};
+
+        // 콤보 데이터 저장
+        comboData[serverId][userId][activeCharacterName][comboName][condition] = comboDescription;
+        utils.saveComboData(comboData);
+
+        return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
+    }
+
     await commandHandler.handle(message);
 });
 
@@ -1232,6 +1230,3 @@ client.login(token)
         console.error("❌ 봇 로그인 실패:", error);
         process.exit(1);
     });
-
-
-
