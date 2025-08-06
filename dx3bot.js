@@ -33,7 +33,7 @@ if (!token) {
 
 // 상수 정의
 const SYNDROME_TRANSLATION = {
-    "엔젤헤일로": "ANGEL HALO",
+    "엔젤 헤일로": "ANGEL HALO",
     "발로르": "BALOR",
     "블랙독": "BLACK DOG",
     "브람스토커": "BRAM STOKER",
@@ -1089,6 +1089,175 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     if (!message.guild) return;
 
+    // 한 줄 캐릭터 생성 기능 (!빠른생성)
+    if (message.content.startsWith('!빠른생성')) {
+        const serverId = message.guild.id;
+        const userId = message.author.id;
+
+        // JSON 문자열 추출
+        const jsonMatch = message.content.match(/!빠른생성\s+(.+)/);
+        if (!jsonMatch) {
+            return message.channel.send('❌ 사용법: `!빠른생성 {"name":"캐릭터명","params":[{"label":"육체","value":"3"}]}`');
+        }
+
+        try {
+            const jsonData = JSON.parse(jsonMatch[1]);
+            
+            if (!jsonData.name) {
+                return message.channel.send('❌ 캐릭터 이름이 필요합니다. "name" 필드를 추가해주세요.');
+            }
+
+            const characterName = jsonData.name;
+
+            // 서버 데이터 구조 초기화
+            if (!data[serverId]) data[serverId] = {};
+            if (!data[serverId][userId]) data[serverId][userId] = {};
+            if (!data[serverId][userId][characterName]) data[serverId][userId][characterName] = {};
+
+            // 기본 능력치 설정
+            if (jsonData.params) {
+                jsonData.params.forEach(param => {
+                    if (param.label && param.value !== undefined) {
+                        data[serverId][userId][characterName][param.label] = parseInt(param.value) || 0;
+                    }
+                });
+            }
+
+            // 상태 설정
+            if (jsonData.status) {
+                jsonData.status.forEach(stat => {
+                    if (stat.label && stat.value !== undefined) {
+                        const label = stat.label === 'BN' ? '침식D' : stat.label;
+                        data[serverId][userId][characterName][label] = parseInt(stat.value) || 0;
+                    }
+                });
+            }
+
+            // 기타 정보 설정
+            ['cover', 'works', 'breed', 'syndromes', 'awakening', 'impulse', 'codeName', 'emoji'].forEach(field => {
+                if (jsonData[field]) {
+                    data[serverId][userId][characterName][field] = jsonData[field];
+                }
+            });
+
+            // D-Lois 설정
+            if (jsonData.dloisNo && jsonData.dloisName) {
+                data[serverId][userId][characterName].dloisNo = jsonData.dloisNo;
+                data[serverId][userId][characterName].dloisName = jsonData.dloisName;
+            }
+
+            // 로이스 설정
+            if (jsonData.lois && Array.isArray(jsonData.lois)) {
+                data[serverId][userId][characterName].lois = jsonData.lois;
+            }
+
+            // 콤보 설정
+            if (jsonData.combos && Array.isArray(jsonData.combos)) {
+                if (!comboData[serverId]) comboData[serverId] = {};
+                if (!comboData[serverId][userId]) comboData[serverId][userId] = {};
+                if (!comboData[serverId][userId][characterName]) comboData[serverId][userId][characterName] = {};
+
+                jsonData.combos.forEach(combo => {
+                    if (combo.name && combo.condition && combo.description) {
+                        if (!comboData[serverId][userId][characterName][combo.name]) {
+                            comboData[serverId][userId][characterName][combo.name] = {};
+                        }
+                        comboData[serverId][userId][characterName][combo.name][combo.condition] = combo.description;
+                    }
+                });
+                utils.saveComboData(comboData);
+            }
+
+            // 활성 캐릭터로 자동 지정
+            if (!activeCharacter[serverId]) activeCharacter[serverId] = {};
+            activeCharacter[serverId][userId] = characterName;
+            utils.saveActiveCharacter(activeCharacter);
+
+            utils.saveData(data);
+
+            return message.channel.send(`🚀 **${characterName}** 캐릭터가 빠르게 생성되고 활성화되었습니다!`);
+
+        } catch (error) {
+            return message.channel.send(`❌ JSON 파싱 오류: ${error.message}\n올바른 JSON 형식인지 확인해주세요.`);
+        }
+    }
+
+    // 이펙트 시스템 추가
+    if (message.content.startsWith('!이펙트')) {
+        const serverId = message.guild.id;
+        const userId = message.author.id;
+
+        const regex = /^!이펙트\s+(?:"([^"]+)"|\[([^\]]+)\]|(\S+))\s+(.+)$/;
+        const match = message.content.match(regex);
+
+        if (!match) {
+            return message.channel.send('❌ 사용법: `!이펙트 ["이펙트명"] [이펙트 설명]`');
+        }
+
+        const effectName = match[1] || match[2] || match[3];
+        const effectDescription = match[4];
+
+        const activeCharacterName = activeCharacter[serverId]?.[userId];
+        if (!activeCharacterName) {
+            return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+        }
+
+        // 이펙트 데이터 저장 구조 생성
+        if (!data[serverId][userId][activeCharacterName].effects) {
+            data[serverId][userId][activeCharacterName].effects = [];
+        }
+
+        // 중복 확인 후 추가 또는 수정
+        const existingIndex = data[serverId][userId][activeCharacterName].effects.findIndex(effect => effect.name === effectName);
+        if (existingIndex !== -1) {
+            data[serverId][userId][activeCharacterName].effects[existingIndex].description = effectDescription;
+            message.channel.send(`✅ **${activeCharacterName}**의 이펙트 **"${effectName}"**가 수정되었습니다.`);
+        } else {
+            data[serverId][userId][activeCharacterName].effects.push({
+                name: effectName,
+                description: effectDescription
+            });
+            message.channel.send(`✅ **${activeCharacterName}**의 이펙트 **"${effectName}"**가 추가되었습니다.`);
+        }
+
+        utils.saveData(data);
+        return;
+    }
+
+    // 이펙트 삭제 기능
+    if (message.content.startsWith('!이펙트삭제')) {
+        const serverId = message.guild.id;
+        const userId = message.author.id;
+
+        const args = message.content.split(' ').slice(1);
+        if (args.length < 1) {
+            return message.channel.send('❌ 사용법: `!이펙트삭제 ["이펙트명"]`');
+        }
+
+        const effectName = utils.extractName(args.join(' '));
+        const activeCharacterName = activeCharacter[serverId]?.[userId];
+
+        if (!activeCharacterName) {
+            return message.reply(`❌ 활성화된 캐릭터가 없습니다.`);
+        }
+
+        if (!data[serverId][userId][activeCharacterName].effects) {
+            return message.channel.send(`❌ **${activeCharacterName}**에게 등록된 이펙트가 없습니다.`);
+        }
+
+        const effectList = data[serverId][userId][activeCharacterName].effects;
+        const index = effectList.findIndex(effect => effect.name === effectName);
+
+        if (index === -1) {
+            return message.channel.send(`❌ **${activeCharacterName}**에게 **"${effectName}"** 이펙트가 존재하지 않습니다.`);
+        }
+
+        effectList.splice(index, 1);
+        utils.saveData(data);
+
+        return message.channel.send(`🗑️ **${activeCharacterName}**의 이펙트 **"${effectName}"**가 삭제되었습니다.`);
+    }
+
     // 콤보 삭제 기능 (더 구체적인 명령어를 먼저 확인)
     if (message.content.startsWith('!콤보삭제')) {
         const serverId = message.guild.id;
@@ -1261,4 +1430,3 @@ client.login(token)
         console.error("❌ 봇 로그인 실패:", error);
         process.exit(1);
     });
-
