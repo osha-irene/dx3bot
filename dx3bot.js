@@ -33,7 +33,7 @@ if (!token) {
 
 // 상수 정의
 const SYNDROME_TRANSLATION = {
-    "엔젤 헤일로": "ANGEL HALO",
+    "엔젤헤일로": "ANGEL HALO",
     "발로르": "BALOR",
     "블랙독": "BLACK DOG",
     "브람스토커": "BRAM STOKER",
@@ -1261,3 +1261,4 @@ client.login(token)
         console.error("❌ 봇 로그인 실패:", error);
         process.exit(1);
     });
+
