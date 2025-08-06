@@ -344,7 +344,8 @@ class CommandHandler {
                            '> - `100↑` : 침식률이 **100 이상**일 때 적용\n' +
                            '> - `130↑` : 침식률이 **130 이상**일 때 적용\n' +
                            '> **예시:** `!콤보 "연속 사격" 99↓ 《C: 발로르(2) + 흑의 철퇴(4)》`\n' +
-                           '> `!@"콤보 이름"` - 침식률에 맞는 콤보를 자동 검색 후 출력'
+                           '> `!@"콤보 이름"` - 침식률에 맞는 콤보를 자동 검색 후 출력\n' +
+                           '> `!콤보삭제` `"콤보 이름"` - 해당 콤보를 삭제합니다.'
                 }
             );
 
@@ -1088,6 +1089,36 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     if (!message.guild) return;
 
+    // 콤보 삭제 기능 (더 구체적인 명령어를 먼저 확인)
+    if (message.content.startsWith('!콤보삭제')) {
+        const serverId = message.guild.id;
+        const userId = message.author.id;
+
+        // 콤보 이름 추출
+        const args = message.content.split(' ').slice(1);
+        if (args.length < 1) {
+            return message.channel.send('❌ 사용법: `!콤보삭제 ["콤보 이름"]`');
+        }
+
+        const comboName = utils.extractName(args.join(' '));
+        const activeCharacterName = activeCharacter[serverId]?.[userId];
+
+        if (!activeCharacterName) {
+            return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
+        }
+
+        // 콤보 존재 확인
+        if (!comboData[serverId]?.[userId]?.[activeCharacterName]?.[comboName]) {
+            return message.channel.send(`❌ **${activeCharacterName}**에게 **"${comboName}"** 콤보가 존재하지 않습니다.`);
+        }
+
+        // 콤보 삭제
+        delete comboData[serverId][userId][activeCharacterName][comboName];
+        utils.saveComboData(comboData);
+
+        return message.channel.send(`🗑️ **${activeCharacterName}**의 콤보 **"${comboName}"**가 삭제되었습니다.`);
+    }
+
     // 콤보 명령어는 직접 처리 (원본과 동일한 방식)
     if (message.content.startsWith('!콤보')) {
         const serverId = message.guild.id;
@@ -1122,36 +1153,6 @@ client.on('messageCreate', async (message) => {
         utils.saveComboData(comboData);
 
         return message.channel.send(`✅ **${activeCharacterName}**의 콤보 **"${comboName}"**가 저장되었습니다.`);
-    }
-
-    // 콤보 삭제 기능 추가
-    if (message.content.startsWith('!콤보삭제')) {
-        const serverId = message.guild.id;
-        const userId = message.author.id;
-
-        // 콤보 이름 추출
-        const args = message.content.split(' ').slice(1);
-        if (args.length < 1) {
-            return message.channel.send('❌ 사용법: `!콤보삭제 ["콤보 이름"]`');
-        }
-
-        const comboName = utils.extractName(args.join(' '));
-        const activeCharacterName = activeCharacter[serverId]?.[userId];
-
-        if (!activeCharacterName) {
-            return message.reply(`❌ 활성화된 캐릭터가 없습니다. \`!지정 ["캐릭터 이름"]\` 명령어로 캐릭터를 지정해주세요.`);
-        }
-
-        // 콤보 존재 확인
-        if (!comboData[serverId]?.[userId]?.[activeCharacterName]?.[comboName]) {
-            return message.channel.send(`❌ **${activeCharacterName}**에게 **"${comboName}"** 콤보가 존재하지 않습니다.`);
-        }
-
-        // 콤보 삭제
-        delete comboData[serverId][userId][activeCharacterName][comboName];
-        utils.saveComboData(comboData);
-
-        return message.channel.send(`🗑️ **${activeCharacterName}**의 콤보 **"${comboName}"**가 삭제되었습니다.`);
     }
 
     await commandHandler.handle(message);
