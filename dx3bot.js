@@ -1079,12 +1079,24 @@ class CommandHandler {
     updateErosionD(characterData, message) {
         const currentErosion = characterData['침식률'] || 0;
         const currentErosionD = characterData['침식D'] || 0;
+        
+        // 현재 침식률에 맞는 침식D 계산
+        let newErosionD = 0;
+        if (currentErosion >= 190) newErosionD = 5;
+        else if (currentErosion >= 130) newErosionD = 4;
+        else if (currentErosion >= 100) newErosionD = 3;
+        else if (currentErosion >= 80) newErosionD = 2;
+        else if (currentErosion >= 60) newErosionD = 1;
+        else newErosionD = 0;
 
-        for (const threshold of EROSION_THRESHOLDS) {
-            if (currentErosion >= threshold.erosion && currentErosionD < threshold.d) {
-                characterData['침식D'] = threshold.d;
-                message.channel.send(`⚠️ 침식률이 ${threshold.erosion}을 넘어서 **침식D가 ${threshold.d}**로 상승했습니다.`);
-                break;
+        // 침식D가 실제로 변했을 때만 업데이트 및 메시지 출력
+        if (newErosionD !== currentErosionD) {
+            characterData['침식D'] = newErosionD;
+            
+            if (newErosionD > currentErosionD) {
+                message.channel.send(`⚠️ 침식률이 ${currentErosion}이 되어 **침식D가 ${currentErosionD} → ${newErosionD}**로 상승했습니다!`);
+            } else if (newErosionD < currentErosionD) {
+                message.channel.send(`✅ 침식률이 ${currentErosion}로 감소하여 **침식D가 ${currentErosionD} → ${newErosionD}**로 하락했습니다.`);
             }
         }
     }
@@ -1460,16 +1472,34 @@ client.on('messageCreate', async (diceMessage) => {
     if (!data[serverId]?.[userId]?.[activeCharacterName]) return;
 
     const currentStatus = data[serverId][userId][activeCharacterName];
-    const newErosion = (currentStatus['침식률'] || 0) + diceResult;
+    const oldErosion = currentStatus['침식률'] || 0;
+    const newErosion = oldErosion + diceResult;
     currentStatus['침식률'] = newErosion;
 
-    // 침식D 업데이트
-    commandHandler.updateErosionD(currentStatus, diceMessage);
+    // 침식D 업데이트 (기존 방식과 새로운 방식 통합)
+    const oldErosionD = currentStatus['침식D'] || 0;
+    let newErosionD = 0;
+    
+    if (newErosion >= 190) newErosionD = 5;
+    else if (newErosion >= 130) newErosionD = 4;
+    else if (newErosion >= 100) newErosionD = 3;
+    else if (newErosion >= 80) newErosionD = 2;
+    else if (newErosion >= 60) newErosionD = 1;
+    else newErosionD = 0;
+
+    currentStatus['침식D'] = newErosionD;
 
     utils.saveData(data);
-    diceMessage.channel.send(
-        `${activeCharacterName} 등장침식 +${diceResult} → 현재 침식률: ${newErosion}\n <@${userId}>`
-    );
+
+    let responseMessage = `${activeCharacterName} 등장침식 +${diceResult} → 현재 침식률: ${newErosion}`;
+    
+    if (newErosionD > oldErosionD) {
+        responseMessage += `\n⚠️ 침식D가 ${oldErosionD} → ${newErosionD}로 상승했습니다!`;
+    }
+    
+    responseMessage += `\n <@${userId}>`;
+
+    diceMessage.channel.send(responseMessage);
 });
 
 // BCdice 봇 깨우기 (12시간마다)
